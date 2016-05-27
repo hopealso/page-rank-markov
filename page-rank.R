@@ -20,10 +20,13 @@ markov.demo <- function(graph, random.factor) {
   #   graph: Matrix of a graph of interlinked web pages, forming the basis of the transition
   #          matrix representing the probability of state change from j to i, i.e. the probability
   #          of a hypothetical web surfer following a link from the jth page to the ith page.
+  #   random.factor: Damping constant to simulate random walk accounting for issue of isolated pages.
+  #                  As written, this factor is the probability that a random surfer will *not*
+  #                  make a jump to a random page but will follow links.
   
   # initial probability vector
-  # initial <- rep(1 / nx, nx)
-  initial <- c(1, rep(0, nx - 1))
+  initial <- rep(1 / nx, nx)
+  # initial <- c(1, rep(0, nx - 1))
   probability <- initial
   
   # Minimum difference between iteration probability values
@@ -37,8 +40,8 @@ markov.demo <- function(graph, random.factor) {
     # PageRank formula
     probability <- (1 - random.factor) / nx + random.factor * (graph %*% probability)
     
-    # Print every 5th iteration.
-    if (i %% 5 == 0) {
+    # Print alternate iterations.
+    if (i == 1 | (i %% 3 == 0)) {
       cat("Iteration", i, ": ")
       print(probability)
     }
@@ -51,7 +54,7 @@ markov.demo <- function(graph, random.factor) {
       cat("Probabilities converge to steady state vector at iteration number", i, ": ")
       print(probability)
       break      
-    } else if (i = 1000) {
+    } else if (i == 1000) {
       cat("Did not reach steady state within 1000 iterations")
       print(probability)
       break
@@ -67,7 +70,7 @@ random.factor <- 0.85
 markov.demo(graph, random.factor)
 
 
-
+# Gian's Work in Progress on Eigenvector calculation:
 ###################################################### 
 ###################################################### 
 ###################################################### 
