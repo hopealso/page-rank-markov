@@ -3,10 +3,7 @@ load.graph <- function(graph.file) {
   # Loads graph for use in other functions in this demo. Assumes named file is in working directory.
   #
   # Arguments:
-  #   graph.file: Name of xlsx file containing matrix of a graph of interlinked web pages,
-  #     forming the basis of the transition matrix representing the probability
-  #     of state change from j to i, i.e. probability of a hypothetical web surfer 
-  #     following a link from the jth page to the ith page.
+  #   graph.file: Name of xlsx file containing matrix of a graph of interlinked web pages.
   
   file.data <- read_excel(graph.file) # Get data from excel.
   nx <- length(file.data) # number of nodes/pages
