@@ -4,9 +4,9 @@ load.graph <- function(graph.file) {
   #
   # Arguments:
   #   graph.file: Name of xlsx file containing matrix of a graph of interlinked web pages,
-  #               forming the basis of the transition matrix representing the probability
-  #               of state change from j to i, i.e. probability of a hypothetical web surfer 
-  #               following a link from the jth page to the ith page.
+  #     forming the basis of the transition matrix representing the probability
+  #     of state change from j to i, i.e. probability of a hypothetical web surfer 
+  #     following a link from the jth page to the ith page.
   
   file.data <- read_excel(graph.file) # Get data from excel.
   nx <- length(file.data) # number of nodes/pages
@@ -18,11 +18,11 @@ markov.demo <- function(graph, random.factor) {
   #
   # Arguments: 
   #   graph: Matrix of a graph of interlinked web pages, forming the basis of the transition
-  #          matrix representing the probability of state change from j to i, i.e. the probability
-  #          of a hypothetical web surfer following a link from the jth page to the ith page.
+  #     matrix representing the probability of state change from j to i, i.e. the probability
+  #     of a hypothetical web surfer following a link from the jth page to the ith page.
   #   random.factor: Damping constant to simulate random walk accounting for issue of isolated pages.
-  #                  As written, this factor is the probability that a random surfer will *not*
-  #                  make a jump to a random page but will follow links.
+  #     As written, this factor is the probability that a random surfer will *not*
+  #     make a jump to a random page but will follow links.
   
   # initial probability vector
   initial <- rep(1 / nx, nx)
