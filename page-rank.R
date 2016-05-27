@@ -13,7 +13,7 @@ load.graph <- function(graph.file) {
   data.matrix(file.data) # Convert data to matrix, transpose, and return
 }
 
-markov.demo <- function(graph) {
+markov.demo <- function(graph, random.factor) {
   # Demonstrates iterations of Markov Chain using PageRank algorithm
   #
   # Arguments: 
@@ -21,61 +21,50 @@ markov.demo <- function(graph) {
   #          matrix representing the probability of state change from j to i, i.e. the probability
   #          of a hypothetical web surfer following a link from the jth page to the ith page.
   
-  gp <- .85 
-  
   # initial probability vector
-  initial <- rep(1/nx, nx)
+  # initial <- rep(1 / nx, nx)
+  initial <- c(1, rep(0, nx - 1))
+  probability <- initial
   
   # Minimum difference between iteration probability values
   delta_threshold <- 1e-10
+  i <- 1
   
-  # Loop through iterations until resultant PageRank eigenvector is stable to threshold delta
-  for (i in 1:50) { 
-
-    # PageRank formula. Dot product of graph matrix with probability vector.
-    pb <- initial
-    pb <- (1 - gp)/nx + gp * (graph %*% pb)
+  # Loop through iterations until resultant PageRank probability vector is stable to threshold delta
+  repeat{
+    previous <- probability
     
+    # PageRank formula
+    probability <- (1 - random.factor) / nx + random.factor * (graph %*% probability)
     
-    # Created checks and differences between pb and previous pb iteration (aka check_vector)
-    check_vector <- abs(initial - pb)
-    check_bool <- FALSE
-    break_key <- FALSE
-    
-    # Run this over every element in check_vector
-    for (n in 1:nx) {
-        
-      # If every value in check_vector are less than 1e-10, change check_bool to TRUE. Otherwise change it back to FALSE.
-      if (check_vector[n] < delta_threshold) {
-          check_bool <- TRUE
-      } else {
-          check_bool <- FALSE
-      }
-      
-      # If check_bool stays TRUE, then print pb table, iteration number and change break_key to TRUE...then break out of FOR (n in 1:nx) loop
-      if (check_bool == TRUE) {
-          print("Probabilities converge to steady state vector")
-          print(pb)
-          print("At iteration number")
-          print(i)
-          break_key <- TRUE
-          break
-      }
+    # Print every 5th iteration.
+    if (i %% 5 == 0) {
+      cat("Iteration", i, ": ")
+      print(probability)
     }
     
-    # If break_key is TRUE, then break out of FOR (i in 1:50) loop too. Without this, code will keep running and printing every iteration afterwards
-    if (break_key == TRUE) {
+    # Check difference between probability and previous probability iteration.
+    check_vector <- abs(previous - probability)
+    
+    # If all values in check_vector are less than delta_threshold, print result and end.
+    if (all(check_vector < delta_threshold)) {
+      cat("Probabilities converge to steady state vector at iteration number", i, ": ")
+      print(probability)
+      break      
+    } else if (i = 1000) {
+      cat("Did not reach steady state within 1000 iterations")
+      print(probability)
       break
     }
+    
+    i <- i + 1
   }
-  
-  pb #the results
-  
 }
 
 library(readxl) # package to read excel files
 graph <- load.graph("graph-simple.xlsx")
-markov.demo(graph)
+random.factor <- 0.85
+markov.demo(graph, random.factor)
 
 
 
@@ -102,7 +91,7 @@ B <- matrix(1/nx,nrow=nx,ncol=nx)
 
 
 # Create PageRank Matrix based off Transition Matrix (graph) and Random Walk Matrix (B) 
-M <- (gp * graph) + ( (1 - gp) * B) 
+M <- (random.factor * graph) + ( (1 - random.factor) * B) 
 
 
 # Create Eigen Vector from the first vector output and change typeof to double (by default, it is complex type) 
@@ -163,7 +152,7 @@ library(pracma)
 # Try this with Haroon's Example 1 WITH DANGLING SITE. 
 # THIS EQUATION INCLUDES the Random Walk into the matrix. 
 # HOWEVER, it won't fix any dangling nodes (columns that don't add up to 1). We need to include that somewhere in the code as a check.  
-# graph will be our Transition Matrix now. We will combine it with the Random Walk Matrix and Random Walk probability (gp) to create our PageRank Matrix (M) 
+# graph will be our Transition Matrix now. We will combine it with the Random Walk Matrix and Random Walk probability (random.factor) to create our PageRank Matrix (M) 
 #  
 (graph <- matrix(c(0, 0, 0, 0, 1/2, 0, 1/2, 0, 1, 0 ,0 ,0 ,1/3 ,1/3 ,1/3 , 0), ncol=4)) 
 
@@ -173,7 +162,7 @@ library(pracma)
 
 
 # Create new matrix M (PageRank Matrix) that keeps 85% of weight to original matrix and 15% to the random walk. Random walk is also known as a "damping factor" 
-(M <- (gp * graph) + ( (1 - gp) * B)) 
+(M <- (random.factor * graph) + ( (1 - random.factor) * B)) 
 
 
 # This gives us the wrong Eigenvalue...since column 1 does not add up to 1.  
