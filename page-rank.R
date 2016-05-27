@@ -1,78 +1,81 @@
-library(readxl) #package to read excel files
 
-website <- read_excel("websites.xlsx") # get data from excel
-nx <- length(website) #numbers of nodes/pages
-website <- data.matrix(website) # convert data to matrix and transpose
-
-gp <- .85 # google prob of going from a link
-
-#probability of being on a page. Here I set the 1st interation to A as a homepage
-
-pb <- scan(text = readline(prompt = "Give the initial probability of being on a page \n"))
-
-# Minimum difference between iteration probability values
-delta_threshold <- 1e-10
-
-
-
-
-
-for (i in 1:50) 
-{ #loops every new probability until it normalized.
+load.graph <- function(graph.file) {
+  # Loads graph for use in other functions in this demo. Assumes named file is in working directory.
+  #
+  # Arguments:
+  #   graph.file: Name of xlsx file containing matrix of a graph of interlinked web pages,
+  #               forming the basis of the transition matrix representing the probability
+  #               of state change from j to i, i.e. probability of a hypothetical web surfer 
+  #               following a link from the jth page to the ith page.
   
+  file.data <- read_excel(graph.file) # Get data from excel.
+  nx <- length(file.data) # number of nodes/pages
+  data.matrix(file.data) # Convert data to matrix, transpose, and return
+}
+
+markov.demo <- function(graph) {
+  # Demonstrates iterations of Markov Chain using PageRank algorithm
+  #
+  # Arguments: 
+  #   graph: Matrix of a graph of interlinked web pages, forming the basis of the transition
+  #          matrix representing the probability of state change from j to i, i.e. the probability
+  #          of a hypothetical web surfer following a link from the jth page to the ith page.
   
-  #PageRank formula. Dot product of website matrix with probability vector.
-  pb_temp <- pb
-  pb <-  (1-gp)/nx + gp*(website%*%pb)
+  gp <- .85 
   
+  # initial probability vector
+  initial <- rep(1/nx, nx)
   
-  # Created checks and differences between pb and previous pb iteration (aka check_vector)
-  check_vector <- abs(pb_temp - pb)
-  check_bool <- FALSE
-  break_key <- FALSE
+  # Minimum difference between iteration probability values
+  delta_threshold <- 1e-10
   
-  
-  # Run this over every element in check_vector
-  for (n in 1:nx) 
-  {
+  # Loop through iterations until resultant PageRank eigenvector is stable to threshold delta
+  for (i in 1:50) { 
+
+    # PageRank formula. Dot product of graph matrix with probability vector.
+    pb <- initial
+    pb <- (1 - gp)/nx + gp * (graph %*% pb)
     
     
-    # If every value in check_vector are less than 1e-10, change check_bool to TRUE. Otherwise change it back to FALSE.
-    if ( check_vector[n] < delta_threshold) 
-    {
-      check_bool <- TRUE
+    # Created checks and differences between pb and previous pb iteration (aka check_vector)
+    check_vector <- abs(initial - pb)
+    check_bool <- FALSE
+    break_key <- FALSE
+    
+    # Run this over every element in check_vector
+    for (n in 1:nx) {
+        
+      # If every value in check_vector are less than 1e-10, change check_bool to TRUE. Otherwise change it back to FALSE.
+      if (check_vector[n] < delta_threshold) {
+          check_bool <- TRUE
+      } else {
+          check_bool <- FALSE
+      }
+      
+      # If check_bool stays TRUE, then print pb table, iteration number and change break_key to TRUE...then break out of FOR (n in 1:nx) loop
+      if (check_bool == TRUE) {
+          print("Probabilities converge to steady state vector")
+          print(pb)
+          print("At iteration number")
+          print(i)
+          break_key <- TRUE
+          break
+      }
     }
     
-    else 
-    {
-      check_bool <- FALSE
-    }
-    
-    # If check_bool stays TRUE, then print pb table, iteration number and change break_key to TRUE...then break out of FOR (n in 1:nx) loop
-    if (check_bool == TRUE) 
-    {
-      print("Probabilities converge to steady state vector")
-      print(pb)
-      print("At iteration number")
-      print(i)
-      break_key <- TRUE
+    # If break_key is TRUE, then break out of FOR (i in 1:50) loop too. Without this, code will keep running and printing every iteration afterwards
+    if (break_key == TRUE) {
       break
     }
-    
   }
   
-  # If break_key is TRUE, then break out of FOR (i in 1:50) loop too. Without this, code will keep running and printing every iteration afterwards
-  if (break_key == TRUE) 
-  {
-    break
-  }
+  pb #the results
   
 }
 
-
-pb #the results
-
-
+library(readxl) # package to read excel files
+graph <- load.graph("graph-simple.xlsx")
+markov.demo(graph)
 
 
 
@@ -82,14 +85,14 @@ pb #the results
 ###################################################### 
 ###################################################### 
 # Proposed eigen value code 
-install.packages("pracma") 
+# install.packages("pracma") 
 library(pracma) 
 
 ## Check if each column sums to 1, if not then over write it so that each value in the column = 1/nx 
 for (i in 1:nx)  
 { #loops every new probability until it normalized. 
-  if (sum(website[,i]) != 1) { 
-    website[,i] <- 1/nx 
+  if (sum(graph[,i]) != 1) { 
+    graph[,i] <- 1/nx 
   } 
 } 
 
@@ -98,8 +101,8 @@ for (i in 1:nx)
 B <- matrix(1/nx,nrow=nx,ncol=nx) 
 
 
-# Create PageRank Matrix based off Transition Matrix (website) and Random Walk Matrix (B) 
-M <- (gp * website) + ( (1 - gp) * B) 
+# Create PageRank Matrix based off Transition Matrix (graph) and Random Walk Matrix (B) 
+M <- (gp * graph) + ( (1 - gp) * B) 
 
 
 # Create Eigen Vector from the first vector output and change typeof to double (by default, it is complex type) 
@@ -135,7 +138,7 @@ if (check == c(1)) {
 
 ######################### EIGEN VECTOR CALCULATION 
 ### NOTE: THIS WILL NOT WORK UNLESS ENTIRE COLUMNS ADD UP TO 1 SO EVERY NODE MUST HAVE AT LEAST 1 LINK 
-install.packages("pracma") 
+# install.packages("pracma") 
 library(pracma) 
 
 
@@ -143,10 +146,10 @@ library(pracma)
 
 
 # Test with THIS matrix first (exact same from Cornell) 
-(website <- matrix(c(0, 1/3, 1/3, 1/3, 0, 0, 1/2, 1/2, 1, 0 ,0 ,0 ,1/2 ,0 ,1/2 , 0), ncol=4)) 
+(graph <- matrix(c(0, 1/3, 1/3, 1/3, 0, 0, 1/2, 1/2, 1, 0 ,0 ,0 ,1/2 ,0 ,1/2 , 0), ncol=4)) 
 
 
-(eigen_vector <- eigen(website)$vectors[,1]) 
+(eigen_vector <- eigen(graph)$vectors[,1]) 
 
 
 # Normalize vector such that entire column sum = 1 
@@ -160,17 +163,17 @@ library(pracma)
 # Try this with Haroon's Example 1 WITH DANGLING SITE. 
 # THIS EQUATION INCLUDES the Random Walk into the matrix. 
 # HOWEVER, it won't fix any dangling nodes (columns that don't add up to 1). We need to include that somewhere in the code as a check.  
-# website will be our Transition Matrix now. We will combine it with the Random Walk Matrix and Random Walk probability (gp) to create our PageRank Matrix (M) 
+# graph will be our Transition Matrix now. We will combine it with the Random Walk Matrix and Random Walk probability (gp) to create our PageRank Matrix (M) 
 #  
-(website <- matrix(c(0, 0, 0, 0, 1/2, 0, 1/2, 0, 1, 0 ,0 ,0 ,1/3 ,1/3 ,1/3 , 0), ncol=4)) 
+(graph <- matrix(c(0, 0, 0, 0, 1/2, 0, 1/2, 0, 1, 0 ,0 ,0 ,1/3 ,1/3 ,1/3 , 0), ncol=4)) 
 
 
-# Random Walk Matrix (same dimensions as website, but divided evenly in each column since equal probability of jumping from one site to the other) 
+# Random Walk Matrix (same dimensions as graph, but divided evenly in each column since equal probability of jumping from one site to the other) 
 (B <- matrix(1/nx,nrow=nx,ncol=nx)) 
 
 
 # Create new matrix M (PageRank Matrix) that keeps 85% of weight to original matrix and 15% to the random walk. Random walk is also known as a "damping factor" 
-(M <- (gp * website) + ( (1 - gp) * B)) 
+(M <- (gp * graph) + ( (1 - gp) * B)) 
 
 
 # This gives us the wrong Eigenvalue...since column 1 does not add up to 1.  
@@ -179,8 +182,8 @@ eigen(M)
 
 ## RECOMMENDATION:  
 # Maybe we can run a check to see if each column sums to 1? and if not, rewrite the column to be 1/nx before proceeding. This is an idea below (not actual code that will work) 
-if (sum(website[,i]) != 1) { 
-  website[,i] <- 1/nx 
+if (sum(graph[,i]) != 1) { 
+  graph[,i] <- 1/nx 
 } 
 
 
