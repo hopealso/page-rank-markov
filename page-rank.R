@@ -5,12 +5,11 @@ load.graph <- function(graph.file) {
   # Arguments:
   #   graph.file: Name of xlsx file containing matrix of a graph of interlinked web pages.
   
-  file.data <- read_excel(graph.file) # Get data from excel.
-  nx <- length(file.data) # number of nodes/pages
+  file.data <- read.csv(graph.file) 
   data.matrix(file.data) # Convert data to matrix, transpose, and return
 }
 
-markov.demo <- function(graph, random.factor) {
+markov.demo <- function(graph, random.factor=0.85, print.skip=3) {
   # Demonstrates iterations of Markov Chain using PageRank algorithm
   #
   # Arguments: 
@@ -20,14 +19,17 @@ markov.demo <- function(graph, random.factor) {
   #   random.factor: Damping constant to simulate random walk accounting for issue of isolated pages.
   #     As written, this factor is the probability that a random surfer will *not*
   #     make a jump to a random page but will follow links.
+  #   print.skip: Skip count when printing graphs to demonstrate iterations.
   
   # initial probability vector
+  nx <- nrow(graph) # number of nodes/pages
   initial <- rep(1 / nx, nx)
   # initial <- c(1, rep(0, nx - 1))
   probability <- initial
   
   # Minimum difference between iteration probability values
   delta_threshold <- 1e-10
+  
   i <- 1
   
   # Loop through iterations until resultant PageRank probability vector is stable to threshold delta
@@ -38,7 +40,7 @@ markov.demo <- function(graph, random.factor) {
     probability <- (1 - random.factor) / nx + random.factor * (graph %*% probability)
     
     # Print alternate iterations.
-    if (i == 1 | (i %% 3 == 0)) {
+    if (i == 1 | (i %% print.skip == 0)) {
       cat("Iteration", i, ": ")
       print(probability)
     }
@@ -61,11 +63,15 @@ markov.demo <- function(graph, random.factor) {
   }
 }
 
-library(readxl) # package to read excel files
-graph <- load.graph("graph-simple.xlsx")
-random.factor <- 0.85
-markov.demo(graph, random.factor)
+#library(readxl) # package to read excel files
+markov.demo(load.graph("graph-simple.csv"), print.skip = 5)
+markov.demo(load.graph("graph-remus.csv"), print.skip = 5)
+markov.demo(load.graph("graph-single-hub.csv"), print.skip = 5)
+markov.demo(load.graph("graph-massive-ball.csv"), print.skip = 5)
 
+
+
+nx <- nrow(graph) # number of nodes/pages
 
 # Gian's Work in Progress on Eigenvector calculation:
 ###################################################### 
