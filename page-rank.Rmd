@@ -3,7 +3,7 @@ title: "Markov Chains Demonstration Using Page Rank"
 author: Giancarlo Dibonaventi, Haroon Janjua, Hope Foster-Reyes, Mallika Thanky, Ethan
   Ton
 date: "May 28, 2016"
-output: pdf_document
+output: html_document
 ---
 
 This example demonstrates Markov Chains using the PageRank algorithm
@@ -22,9 +22,9 @@ load.graph <- function(graph.file) {
 
 #  Checks that the sum of every column = 1. If it does not = 1, create each value as 1/nx where nx is total number of nodes
 check.markov <- function(graph) {
-  nx <- length(graph)
-  for (i in 1:nx)  
-  { #loops every new probability until it normalized. 
+  # Loop through columns and normalize.
+  nx <- nrow(graph)
+  for (i in ncol(graph)) { 
     if (sum(graph[,i]) != 1) { 
       graph[,i] <- 1/nx 
     }
@@ -55,7 +55,7 @@ markov.demo <- function(graph, random.factor=0.85, print.skip=3) {
   delta_threshold <- 1e-10
   
   # Check if truly Markov, if not, change problem columns to sum to 1
-  graph <- check.markov(graph)
+  #graph <- check.markov(graph)
   
   i <- 1
   print(graph)
@@ -132,30 +132,31 @@ eigen.demo <- function(graph, random.factor=0.85) {
 
 Let's start with a simple example. Our first output is the graph itself, followed by the Markov iterations which calculate PageRank and gradually reach a steady state.
 
-```{r a}
-markov.demo(load.graph("graph-simple.csv"), print.skip = 5)
+```{r simple}
+graph <- load.graph("graph-simple.csv")
+markov.demo(graph, print.skip = 5)
 ```
 
 This example is from the Cornell lecture by Raluca Remus.
 
-```{r}
+```{r remus}
 markov.demo(load.graph("graph-remus.csv"), print.skip = 20)
 ```
 
 This example confirms that if every page points equally to every other page, the PageRank will be evenly distributed.
 
-```{r}
+```{r ball}
 markov.demo(load.graph("graph-massive-ball.csv"), print.skip = 5)
 ```
 
 This example represents a "single hub". Note that all pages point to one hub.
 
-```{r}
+```{r hub}
 markov.demo(load.graph("graph-single-hub.csv"), print.skip = 5)
 ```
 
 What happens if we vary the single hub example so that the hub points only to another site instead of itself? As shown, the hub has the largest PageRank, but the page it points to has nearly as much as the hub "passes" its PageRank to the other site.
 
-```{r}
+```{r hub-xfer}
 markov.demo(load.graph("graph-hub-transfer.csv"), print.skip = 40)
 ```
