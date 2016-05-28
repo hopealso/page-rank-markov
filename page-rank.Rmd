@@ -97,7 +97,7 @@ eigen.demo <- function(graph, random.factor=0.85) {
   nx <- length(graph)
   
   # Check if truly Markov, if not, change problem columns to sum to 1
-  graph <- check.markov(graph)
+  #graph <- check.markov(graph)
   
   
   # Create Random Walk Matrix (B) 
@@ -135,28 +135,37 @@ Let's start with a simple example. Our first output is the graph itself, followe
 ```{r simple}
 graph <- load.graph("graph-simple.csv")
 markov.demo(graph, print.skip = 5)
+#eigen.demo(graph)
 ```
 
 This example is from the Cornell lecture by Raluca Remus.
 
 ```{r remus}
-markov.demo(load.graph("graph-remus.csv"), print.skip = 20)
+graph <- load.graph("graph-remus.csv")
+markov.demo(graph, print.skip = 20)
+#eigen.demo(graph)
 ```
 
 This example confirms that if every page points equally to every other page, the PageRank will be evenly distributed.
 
 ```{r ball}
-markov.demo(load.graph("graph-massive-ball.csv"), print.skip = 5)
+graph <- load.graph("graph-massive-ball.csv")
+markov.demo(graph, print.skip = 5)
+#eigen.demo(graph)
 ```
 
 This example represents a "single hub". Note that all pages point to one hub.
 
 ```{r hub}
-markov.demo(load.graph("graph-single-hub.csv"), print.skip = 5)
+graph <- load.graph("graph-single-hub.csv")
+markov.demo(graph, print.skip = 5)
+#eigen.demo(graph)
 ```
 
 What happens if we vary the single hub example so that the hub points only to another site instead of itself? As shown, the hub has the largest PageRank, but the page it points to has nearly as much as the hub "passes" its PageRank to the other site.
 
 ```{r hub-xfer}
-markov.demo(load.graph("graph-hub-transfer.csv"), print.skip = 40)
+graph <- load.graph("graph-hub-transfer.csv")
+markov.demo(graph, print.skip = 40)
+#eigen.demo(graph)
 ```
