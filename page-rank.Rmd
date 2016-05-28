@@ -19,6 +19,20 @@ load.graph <- function(graph.file) {
   data.matrix(file.data) # Convert data to matrix, transpose, and return
 }
 
+
+#  Checks that the sum of every column = 1. If it does not = 1, create each value as 1/nx where nx is total number of nodes
+check.markov <- function(graph) {
+  nx <- length(graph)
+  for (i in 1:nx)  
+  { #loops every new probability until it normalized. 
+    if (sum(graph[,i]) != 1) { 
+      graph[,i] <- 1/nx 
+    }
+  }
+  print(graph)
+}
+
+
 markov.demo <- function(graph, random.factor=0.85, print.skip=3) {
   # Demonstrates iterations of Markov Chain using PageRank algorithm
   #
@@ -39,6 +53,9 @@ markov.demo <- function(graph, random.factor=0.85, print.skip=3) {
   
   # Minimum difference between iteration probability values
   delta_threshold <- 1e-10
+  
+  # Check if truly Markov, if not, change problem columns to sum to 1
+  graph <- check.markov(graph)
   
   i <- 1
   print(graph)
@@ -72,6 +89,44 @@ markov.demo <- function(graph, random.factor=0.85, print.skip=3) {
     
     i <- i + 1
   }
+}
+
+
+eigen.demo <- function(graph, random.factor=0.85) {
+  
+  nx <- length(graph)
+  
+  # Check if truly Markov, if not, change problem columns to sum to 1
+  graph <- check.markov(graph)
+  
+  
+  # Create Random Walk Matrix (B) 
+  B <- matrix(1/nx,nrow=nx,ncol=nx) 
+
+
+# Create PageRank Matrix based off Transition Matrix (graph) and Random Walk Matrix (B) 
+  M <- (random.factor * graph) + ( (1 - random.factor) * B) 
+
+
+# Create Eigen Vector from the first vector output and change typeof to double (by default, it is complex type) 
+  eigen_vector <- as.double(eigen(M)$vectors[,1]) 
+
+
+# Normalize vector such that entire column sum = 1 
+  steady_state_vector <- eigen_vector / sum(eigen_vector) 
+
+  
+  
+  # Run check to see if Steady State Vector actually sums to 1 
+  check <- sum(steady_state_vector) 
+
+  if (check == c(1)) { 
+    print(steady_state_vector) 
+  } else  
+  { 
+    print("WARNING: Steady State Vector DOES NOT sum to 1") 
+    print(steady_state_vector)
+  } 
 }
 ```
 
