@@ -1,16 +1,16 @@
 ---
 title: "Markov Chains Demonstration Using Page Rank"
+author: Giancarlo Dibonaventi, Haroon Janjua, Hope Foster-Reyes, Mallika Thanky, Ethan
+  Ton
 date: "May 28, 2016"
-output: html_document
-author: Giancarlo Dibonaventi, Haroon Janjua, Hope Foster-Reyes, Mallika Thanky,
-  Ethan Ton.
+output: pdf_document
 ---
 
 This example demonstrates Markov Chains using the PageRank algorithm
 
 ```{r functions}
 load.graph <- function(graph.file) {
-  # Loads graph for use in other functions in this demo. Assumes named file is in working directory.
+  # Loads graph used by other functions in demo. Assumes file is in working directory.
   #
   # Arguments:
   #   graph.file: Name of xlsx file containing matrix of a graph of interlinked web pages.
@@ -23,10 +23,10 @@ markov.demo <- function(graph, random.factor=0.85, print.skip=3) {
   # Demonstrates iterations of Markov Chain using PageRank algorithm
   #
   # Arguments: 
-  #   graph: Matrix of a graph of interlinked web pages, forming the basis of the transition
-  #     matrix representing the probability of state change from j to i, i.e. the probability
+  #   graph: Matrix of a graph of interlinked web pages, forming the transition matrix
+  #     representing the probability of state change from j to i, i.e. the probability
   #     of a hypothetical web surfer following a link from the jth page to the ith page.
-  #   random.factor: Damping constant to simulate random walk accounting for issue of isolated pages.
+  #   random.factor: Damping constant simulates random walk accounting for isolated pages.
   #     As written, this factor is the probability that a random surfer will *not*
   #     make a jump to a random page but will follow links.
   #   print.skip: Skip count when printing graphs to demonstrate iterations.
@@ -43,7 +43,7 @@ markov.demo <- function(graph, random.factor=0.85, print.skip=3) {
   i <- 1
   print(graph)
   
-  # Loop through iterations until resultant PageRank probability vector is stable to threshold delta
+  # Iterate until PageRank probability vector is stable to threshold delta
   repeat{
     previous <- probability
     
