@@ -1,0 +1,106 @@
+---
+title: "Markov Chains Demonstration Using Page Rank"
+date: "May 28, 2016"
+output: html_document
+author: Giancarlo Dibonaventi, Haroon Janjua, Hope Foster-Reyes, Mallika Thanky,
+  Ethan Ton.
+---
+
+This example demonstrates Markov Chains using the PageRank algorithm
+
+```{r functions}
+load.graph <- function(graph.file) {
+  # Loads graph for use in other functions in this demo. Assumes named file is in working directory.
+  #
+  # Arguments:
+  #   graph.file: Name of xlsx file containing matrix of a graph of interlinked web pages.
+  
+  file.data <- read.csv(graph.file) 
+  data.matrix(file.data) # Convert data to matrix, transpose, and return
+}
+
+markov.demo <- function(graph, random.factor=0.85, print.skip=3) {
+  # Demonstrates iterations of Markov Chain using PageRank algorithm
+  #
+  # Arguments: 
+  #   graph: Matrix of a graph of interlinked web pages, forming the basis of the transition
+  #     matrix representing the probability of state change from j to i, i.e. the probability
+  #     of a hypothetical web surfer following a link from the jth page to the ith page.
+  #   random.factor: Damping constant to simulate random walk accounting for issue of isolated pages.
+  #     As written, this factor is the probability that a random surfer will *not*
+  #     make a jump to a random page but will follow links.
+  #   print.skip: Skip count when printing graphs to demonstrate iterations.
+  
+  # initial probability vector
+  nx <- nrow(graph) # number of nodes/pages
+  initial <- rep(1 / nx, nx)
+  # initial <- c(1, rep(0, nx - 1))
+  probability <- initial
+  
+  # Minimum difference between iteration probability values
+  delta_threshold <- 1e-10
+  
+  i <- 1
+  print(graph)
+  
+  # Loop through iterations until resultant PageRank probability vector is stable to threshold delta
+  repeat{
+    previous <- probability
+    
+    # PageRank formula
+    probability <- (1 - random.factor) / nx + random.factor * (graph %*% probability)
+    
+    # Print alternate iterations.
+    if (i %in% 1:5 | (i %% print.skip == 0)) {
+      cat("Iteration", i, ": ")
+      print(probability)
+    }
+    
+    # Check difference between probability and previous probability iteration.
+    check_vector <- abs(previous - probability)
+    
+    # If all values in check_vector are less than delta_threshold, print result and end.
+    if (all(check_vector < delta_threshold)) {
+      cat("Probabilities converge to steady state vector at iteration number", i, ": ")
+      print(probability)
+      break      
+    } else if (i == 1000) {
+      cat("Did not reach steady state within 1000 iterations")
+      print(probability)
+      break
+    }
+    
+    i <- i + 1
+  }
+}
+```
+
+Let's start with a simple example. Our first output is the graph itself, followed by the Markov iterations which calculate PageRank and gradually reach a steady state.
+
+```{r a}
+markov.demo(load.graph("graph-simple.csv"), print.skip = 5)
+```
+
+This example is from the Cornell lecture by Raluca Remus.
+
+```{r}
+markov.demo(load.graph("graph-remus.csv"), print.skip = 20)
+```
+
+This example confirms that if every page points equally to every other page, the PageRank will be evenly distributed.
+
+```{r}
+markov.demo(load.graph("graph-massive-ball.csv"), print.skip = 5)
+```
+
+This example represents a "single hub". Note that all pages point to one hub.
+
+```{r}
+markov.demo(load.graph("graph-single-hub.csv"), print.skip = 5)
+```
+
+What happens if we vary the single hub example so that the hub points only to another site instead of itself? As shown, the hub has the largest PageRank, but the page it points to has nearly as much as the hub "passes" its PageRank to the other site.
+
+```{r}
+markov.demo(load.graph("graph-hub-transfer.csv"), print.skip = 40)
+```
