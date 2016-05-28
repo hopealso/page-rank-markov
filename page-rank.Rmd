@@ -52,7 +52,7 @@ markov.demo <- function(graph, random.factor=0.85, print.skip=3) {
   probability <- initial
   
   # Minimum difference between iteration probability values
-  delta_threshold <- 1e-10
+  delta_threshold <- 1e-7
   
   # Check if truly Markov, if not, change problem columns to sum to 1
   #graph <- check.markov(graph)
