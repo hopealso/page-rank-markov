@@ -20,16 +20,39 @@ load.graph <- function(graph.file) {
 }
 
 
-#  Checks that the sum of every column = 1. If it does not = 1, create each value as 1/nx where nx is total number of nodes
 check.markov <- function(graph) {
+  # Checks that the sum of every column = 1. 
+  #   If it adds to 1, return the graph unchanged.
+  #   If it adds to 0 (dangling node), return an adjusted graph, create each value 
+  #     as 1/nx where nx is total number of nodes. 
+  #   If it does not add to 1 and is not a dangling node, return FALSE. This represents
+  #     an error in the matrix itself.
+  #
+  # Arguments:
+  #   graph: Matrix of a graph of interlinked web pages
+  
   # Loop through columns and normalize.
   nx <- nrow(graph)
-  for (i in ncol(graph)) { 
-    if (sum(graph[,i]) != 1) { 
-      graph[,i] <- 1/nx 
+  
+  adjusted <- FALSE
+  for (i in 1:nx) { 
+    colsum <- sum(graph[,i])
+    if (!isTRUE(all.equal(colsum,1, tolerance=0.0001))) { 
+      if (colsum == 0) {
+        graph[,i] <- 1/nx 
+        adjusted <- TRUE
+      } else {
+        return(FALSE)
+      }
     }
   }
-  print(graph)
+  
+  if (adjusted) {
+    cat("Adjusted graph:")
+    print(graph)
+  }
+
+  return(graph)
 }
 
 
