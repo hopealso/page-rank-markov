@@ -103,6 +103,7 @@ markov.demo <- function(graph, initial, random.factor=0.85, print.skip=3) {
   return(probability)
 }
 
+
 eigen.demo <- function(graph, random.factor=0.85) {
   
   nx <- length(graph)
