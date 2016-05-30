@@ -168,6 +168,8 @@ This example confirms that if every page points equally to every other page, the
 
 ```{r ball}
 graph <- load.graph("graph-massive-ball.csv")
+nx <- nrow(graph)
+initial <- rep(1 / nx, nx)
 markov.demo(graph, initial, print.skip = 5)
 #eigen.demo(graph)
 ```
