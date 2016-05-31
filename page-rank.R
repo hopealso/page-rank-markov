@@ -105,7 +105,7 @@ markov.demo <- function(graph, initial, random.factor=0.85, print.skip=3) {
 
 eigen.demo <- function(graph, random.factor=0.85) {
   
-  nx <- length(graph)
+  nx <- nrow(graph)
   
   # Check if truly Markov, if not, change problem columns to sum to 1
   #graph <- check.markov(graph)
@@ -116,9 +116,11 @@ eigen.demo <- function(graph, random.factor=0.85) {
   # Create PageRank Matrix based off Transition Matrix (graph) and Random Walk Matrix (B) 
   M <- (random.factor * graph) + ((1 - random.factor) * B) 
   
-  # Create Eigen Vector from the first vector output and change typeof to double (by default, it is complex type) 
-  eigen_vector <- as.double(eigen(M)$vectors[,1]) 
+  eigen_output <- eigen(M)
   
+  # Create eigenvector with an eigenvalue of 1 and change type to double (by default, it is complex type) 
+  eigen_vector <- as.double(eigen_output$vectors[abs(as.double(eigen_output$values) - 1) < 1e-6])
+
   # Normalize vector such that entire column sum = 1 
   steady_state_vector <- eigen_vector / sum(eigen_vector) 
   
@@ -126,7 +128,7 @@ eigen.demo <- function(graph, random.factor=0.85) {
   check <- sum(steady_state_vector) 
   
   if (check == c(1)) { 
-    print(steady_state_vector) 
+    return(steady_state_vector) 
   } else { 
     print("WARNING: Steady State Vector DOES NOT sum to 1") 
     print(steady_state_vector)

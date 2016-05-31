@@ -3,7 +3,7 @@ title: "Markov Chains Demonstration Using PageRank"
 author: Giancarlo Dibonaventi, Haroon Janjua, Hope Foster-Reyes, Mallika Thanky, Ethan
   Ton
 date: "May 28, 2016"
-output: pdf_document
+output: html_document
 ---
 
 This example demonstrates Markov Chains using the PageRank algorithm.
@@ -116,7 +116,7 @@ markov.demo <- function(graph, initial, random.factor=0.85, print.skip=3) {
 
 eigen.demo <- function(graph, random.factor=0.85) {
   
-  nx <- length(graph)
+  nx <- nrow(graph)
   
   # Check if truly Markov, if not, change problem columns to sum to 1
   #graph <- check.markov(graph)
@@ -127,9 +127,11 @@ eigen.demo <- function(graph, random.factor=0.85) {
   # Create PageRank Matrix based off Transition Matrix (graph) and Random Walk Matrix (B) 
   M <- (random.factor * graph) + ((1 - random.factor) * B) 
   
-  # Create Eigen Vector from the first vector output and change typeof to double (by default, it is complex type) 
-  eigen_vector <- as.double(eigen(M)$vectors[,1]) 
+  eigen_output <- eigen(M)
   
+  # Create eigenvector with an eigenvalue of 1 and change type to double (by default, it is complex type) 
+  eigen_vector <- as.double(eigen_output$vectors[abs(as.double(eigen_output$values) - 1) < 1e-6])
+
   # Normalize vector such that entire column sum = 1 
   steady_state_vector <- eigen_vector / sum(eigen_vector) 
   
@@ -137,7 +139,7 @@ eigen.demo <- function(graph, random.factor=0.85) {
   check <- sum(steady_state_vector) 
   
   if (check == c(1)) { 
-    print(steady_state_vector) 
+    return(steady_state_vector) 
   } else { 
     print("WARNING: Steady State Vector DOES NOT sum to 1") 
     print(steady_state_vector)
@@ -154,7 +156,7 @@ graph <- load.graph("graph-massive-ball.csv")
 nx <- nrow(graph)
 initial <- rep(1 / nx, nx)
 markov.demo(graph, initial, print.skip = 5)
-#eigen.demo(graph)
+eigen.demo(graph)
 ```
 
 This example represents a "single hub". Note that all pages point to one hub.
@@ -162,7 +164,7 @@ This example represents a "single hub". Note that all pages point to one hub.
 ```{r hub}
 graph <- load.graph("graph-single-hub.csv")
 markov.demo(graph, initial, print.skip = 5)
-#eigen.demo(graph)
+eigen.demo(graph)
 ```
 
 What happens if we vary the single hub example so that the hub points only to another site instead of itself? As shown, the hub has the largest PageRank, but the page it points to has nearly as much as the hub "passes" its PageRank to the other site.
@@ -170,7 +172,7 @@ What happens if we vary the single hub example so that the hub points only to an
 ```{r hub-xfer}
 graph <- load.graph("graph-hub-transfer.csv")
 markov.demo(graph, initial, print.skip = 40)
-#eigen.demo(graph)
+eigen.demo(graph)
 ```
 
 This example is from the Cornell lecture by Raluca Remus.
@@ -180,7 +182,7 @@ graph <- load.graph("graph-remus.csv")
 nx <- nrow(graph)
 initial <- rep(1 / nx, nx)
 markov.demo(graph, initial, print.skip = 20)
-#eigen.demo(graph)
+eigen.demo(graph)
 ```
 
 This more complex example demonstrates two hubs.
@@ -190,5 +192,5 @@ graph <- load.graph("graph-dual-hub.csv")
 nx <- nrow(graph)
 initial <- rep(1 / nx, nx)
 markov.demo(graph, initial, print.skip = 20)
-#eigen.demo(graph)
+eigen.demo(graph)
 ```
