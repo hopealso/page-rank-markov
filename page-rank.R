@@ -20,9 +20,9 @@ check.markov <- function(graph) {
   # Arguments:
   #   graph: Matrix of a graph of interlinked web pages
   
-  # Loop through columns and normalize.
   nx <- nrow(graph)
-  
+
+  # Loop through columns and normalize.    
   adjusted <- FALSE
   for (i in 1:nx) { 
     colsum <- sum(graph[,i])
@@ -62,9 +62,6 @@ markov.demo <- function(graph, initial, random.factor=0.85, print.skip=3) {
   nx <- nrow(graph) # number of nodes/pages
   probability <- initial
   
-  # Minimum difference between iteration probability values
-  delta_threshold <- 1e-7
-  
   message("Graph input, representing original transition matrix:")
   print(graph)
   
@@ -74,10 +71,11 @@ markov.demo <- function(graph, initial, random.factor=0.85, print.skip=3) {
     stop("ERROR: Data is not properly formatted.")
   }
   
-  i <- 1
-  
-  # Iterate until PageRank probability vector is stable to threshold delta
-  repeat{
+  # Minimum difference between iteration probability values
+  delta_threshold <- 1e-7
+
+  # Iterate until PageRank probability vector is stable to threshold delta, or max 1000 iterations
+  for (i in 1:1000) {
     previous <- probability
     
     # PageRank formula
@@ -97,14 +95,11 @@ markov.demo <- function(graph, initial, random.factor=0.85, print.skip=3) {
       message("Probabilities converge to steady state vector at iteration number ", i, ": ")
       return(probability)
       break      
-    } else if (i == 1000) {
-      message("Did not reach steady state within 1000 iterations")
-      print(probability)
-      break
-    }
-    
-    i <- i + 1
+    } 
   }
+  
+  message("Did not reach steady state within 1000 iterations.")
+  print(probability)
 }
 
 
