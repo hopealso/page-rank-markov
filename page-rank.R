@@ -37,7 +37,7 @@ check.markov <- function(graph) {
   }
   
   if (adjusted) {
-    cat("Adjusted graph:")
+    message("Graph adjusted to correct dangling nodes:")
     print(graph)
   }
 
@@ -65,11 +65,16 @@ markov.demo <- function(graph, initial, random.factor=0.85, print.skip=3) {
   # Minimum difference between iteration probability values
   delta_threshold <- 1e-7
   
+  message("Graph input, representing original transition matrix:")
+  print(graph)
+  
   # Check if truly Markov, if not, change problem columns to sum to 1
-  #graph <- check.markov(graph)
+  graph <- check.markov(graph)
+  if (graph[1] == FALSE & length(graph) == 1) {
+    stop("ERROR: Data is not properly formatted.")
+  }
   
   i <- 1
-  print(graph)
   
   # Iterate until PageRank probability vector is stable to threshold delta
   repeat{
@@ -80,7 +85,7 @@ markov.demo <- function(graph, initial, random.factor=0.85, print.skip=3) {
     
     # Print alternate iterations.
     if (i %in% 1:5 | (i %% print.skip == 0)) {
-      cat("Iteration", i, ": ")
+      message("Iteration ", i, " PageRank (probability) vector: ")
       print(probability)
     }
     
@@ -89,18 +94,17 @@ markov.demo <- function(graph, initial, random.factor=0.85, print.skip=3) {
     
     # If all values in check_vector are less than delta_threshold, print result and end.
     if (all(check_vector < delta_threshold)) {
-      cat("Probabilities converge to steady state vector at iteration number", i, ": ")
-      print(probability)
+      message("Probabilities converge to steady state vector at iteration number ", i, ": ")
+      return(probability)
       break      
     } else if (i == 1000) {
-      cat("Did not reach steady state within 1000 iterations")
+      message("Did not reach steady state within 1000 iterations")
       print(probability)
       break
     }
     
     i <- i + 1
   }
-  return(probability)
 }
 
 
