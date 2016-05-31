@@ -145,25 +145,9 @@ eigen.demo <- function(graph, random.factor=0.85) {
 }
 ```
 
-Let's start with a simple example. Our first output is the graph itself, followed by the Markov iterations which calculate PageRank and gradually reach a steady state.
+Let's start with a simple example. This example confirms that if every page points equally to every other page, the PageRank will be evenly distributed.
 
-```{r simple}
-graph <- load.graph("graph-simple.csv")
-nx <- nrow(graph)
-initial <- rep(1 / nx, nx)
-markov.demo(graph, initial, print.skip = 5)
-#eigen.demo(graph)
-```
-
-This example is from the Cornell lecture by Raluca Remus.
-
-```{r remus}
-graph <- load.graph("graph-remus.csv")
-markov.demo(graph, initial, print.skip = 20)
-#eigen.demo(graph)
-```
-
-This example confirms that if every page points equally to every other page, the PageRank will be evenly distributed.
+Our first output is the graph itself, followed by the Markov iterations which calculate PageRank and gradually reach a steady state.
 
 ```{r ball}
 graph <- load.graph("graph-massive-ball.csv")
@@ -186,5 +170,25 @@ What happens if we vary the single hub example so that the hub points only to an
 ```{r hub-xfer}
 graph <- load.graph("graph-hub-transfer.csv")
 markov.demo(graph, initial, print.skip = 40)
+#eigen.demo(graph)
+```
+
+This example is from the Cornell lecture by Raluca Remus.
+
+```{r remus}
+graph <- load.graph("graph-remus.csv")
+nx <- nrow(graph)
+initial <- rep(1 / nx, nx)
+markov.demo(graph, initial, print.skip = 20)
+#eigen.demo(graph)
+```
+
+This more complex example demonstrates two hubs.
+
+```{r dual}
+graph <- load.graph("graph-dual-hub.csv")
+nx <- nrow(graph)
+initial <- rep(1 / nx, nx)
+markov.demo(graph, initial, print.skip = 20)
 #eigen.demo(graph)
 ```
