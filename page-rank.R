@@ -45,7 +45,7 @@ check.markov <- function(graph) {
 }
 
 
-markov.demo <- function(graph, initial, random.factor=0.85, print.skip=3) {
+markov.demo <- function(graph, initial, damping.factor=0.85, print.skip=3) {
   # Demonstrates iterations of Markov Chain using PageRank algorithm
   #
   # Arguments: 
@@ -53,10 +53,10 @@ markov.demo <- function(graph, initial, random.factor=0.85, print.skip=3) {
   #     representing the probability of state change from j to i, i.e. the probability
   #     of a hypothetical web surfer following a link from the jth page to the ith page.
   #   initial: Initial probability vector.
-  #   random.factor: Damping constant simulates random walk accounting for isolated pages.
+  #   damping.factor: Damping constant simulates random walk accounting for isolated pages.
   #     As written, this factor is the probability that a random surfer will *not*
   #     make a jump to a random page but will follow links.
-  #     Set random.factor to 1 to simulate basic Markov Chain without damping.
+  #     Set damping.factor to 1 to simulate basic Markov Chain without damping.
   #   print.skip: Skip count when printing graphs to demonstrate iterations.
   
   nx <- nrow(graph) # number of nodes/pages
@@ -79,7 +79,7 @@ markov.demo <- function(graph, initial, random.factor=0.85, print.skip=3) {
     previous <- probability
     
     # PageRank formula
-    probability <- (1 - random.factor) / nx + random.factor * (graph %*% probability)
+    probability <- (1 - damping.factor) / nx + damping.factor * (graph %*% probability)
     
     # Print alternate iterations.
     if (i %in% 1:5 | (i %% print.skip == 0)) {
@@ -103,18 +103,21 @@ markov.demo <- function(graph, initial, random.factor=0.85, print.skip=3) {
 }
 
 
-eigen.demo <- function(graph, random.factor=0.85) {
+eigen.demo <- function(graph, damping.factor=0.85) {
   
   nx <- nrow(graph)
   
   # Check if truly Markov, if not, change problem columns to sum to 1
   graph <- check.markov(graph)
+  if (graph[1] == FALSE & length(graph) == 1) {
+    stop("ERROR: Data is not properly formatted.")
+  }
   
   # Create Random Walk Matrix (B) 
   B <- matrix(1/nx,nrow=nx,ncol=nx) 
   
   # Create PageRank Matrix based off Transition Matrix (graph) and Random Walk Matrix (B) 
-  M <- (random.factor * graph) + ((1 - random.factor) * B) 
+  M <- (damping.factor * graph) + ((1 - damping.factor) * B) 
   
   eigen_output <- eigen(M)
   
@@ -127,7 +130,7 @@ eigen.demo <- function(graph, random.factor=0.85) {
   # Run check to see if Steady State Vector actually sums to 1 
   check <- sum(steady_state_vector) 
   
-  if (isTRUE(all.equal(check,c(1)))) { 
+  if (isTRUE(all.equal(check,1))) { 
     message("Steady State Vector is:")
     return(steady_state_vector) 
   } else { 
