@@ -108,7 +108,7 @@ eigen.demo <- function(graph, random.factor=0.85) {
   nx <- nrow(graph)
   
   # Check if truly Markov, if not, change problem columns to sum to 1
-  #graph <- check.markov(graph)
+  graph <- check.markov(graph)
   
   # Create Random Walk Matrix (B) 
   B <- matrix(1/nx,nrow=nx,ncol=nx) 
@@ -119,18 +119,19 @@ eigen.demo <- function(graph, random.factor=0.85) {
   eigen_output <- eigen(M)
   
   # Create eigenvector with an eigenvalue of 1 and change type to double (by default, it is complex type) 
-  eigen_vector <- as.double(eigen_output$vectors[abs(as.double(eigen_output$values) - 1) < 1e-6])
-
+  eigen_vector <- as.double(eigen_output$vectors[, which.min(abs(eigen_output$values - 1))])
+  
   # Normalize vector such that entire column sum = 1 
   steady_state_vector <- eigen_vector / sum(eigen_vector) 
   
   # Run check to see if Steady State Vector actually sums to 1 
   check <- sum(steady_state_vector) 
   
-  if (check == c(1)) { 
+  if (isTRUE(all.equal(check,c(1)))) { 
+    message("Steady State Vector is:")
     return(steady_state_vector) 
   } else { 
-    print("WARNING: Steady State Vector DOES NOT sum to 1") 
+    message("WARNING: Steady State Vector DOES NOT sum to 1.") 
     print(steady_state_vector)
   } 
 }
