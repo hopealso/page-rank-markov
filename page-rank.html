@@ -444,9 +444,8 @@ markov.demo(graph, initial, print.skip = 5)</code></pre>
 ##  [9,]    0
 ## [10,]    0</code></pre>
 </div>
-</div>
-<div id="transfer-of-influence" class="section level1">
-<h1>Transfer of Influence</h1>
+<div id="transfer-of-influence" class="section level2">
+<h2>Transfer of Influence</h2>
 <p>Next, we vary the single hub example so that the hub points only to another page instead of itself. As shown, the hub has the largest PageRank, but the page it points to has nearly as much as the hub “passes” its PageRank to the other page.</p>
 <pre class="r"><code>graph &lt;- load.graph(&quot;graph-hub-transfer.csv&quot;)
 markov.demo(graph, initial, print.skip = 30)</code></pre>
@@ -550,6 +549,7 @@ markov.demo(graph, initial, print.skip = 30)</code></pre>
 <pre><code>## Steady state vector is:</code></pre>
 <pre><code>##  [1] 0.4675676 0.4124324 0.0150000 0.0150000 0.0150000 0.0150000 0.0150000
 ##  [8] 0.0150000 0.0150000 0.0150000</code></pre>
+</div>
 </div>
 <div id="dual-hub-more-complex-example" class="section level1">
 <h1>Dual Hub – More Complex Example</h1>

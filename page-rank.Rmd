@@ -3,7 +3,7 @@ title: "Markov Chains Demonstration Using PageRank"
 author: Giancarlo Dibonaventi, Haroon Janjua, Hope Foster-Reyes, Mallika Thanky, Ethan
   Ton
 date: "May 28, 2016"
-output: pdf_document
+output: html_document
 ---
 
 This example demonstrates Markov Chains using the PageRank algorithm.
