@@ -9,7 +9,7 @@ load.graph <- function(graph.file) {
 }
 
 
-check.markov <- function(graph) {
+check.markov <- function(graph, fix.dangling) {
   # Checks that the sum of every column = 1. 
   #   If it adds to 1, return the graph unchanged.
   #   If it adds to 0 (dangling node), return an adjusted graph, create each value 
@@ -28,8 +28,10 @@ check.markov <- function(graph) {
     colsum <- sum(graph[,i])
     if (!isTRUE(all.equal(colsum,1, tolerance=0.0001))) { 
       if (colsum == 0) {
-        graph[,i] <- 1/nx 
-        adjusted <- TRUE
+        if (fix.dangling) {
+          graph[,i] <- 1/nx 
+          adjusted <- TRUE
+        }
       } else {
         return(FALSE)
       }
@@ -45,7 +47,8 @@ check.markov <- function(graph) {
 }
 
 
-markov.demo <- function(graph, initial, damping.factor=0.85, print.skip=3) {
+markov.demo <- function(graph, initial, damping.factor=0.85, 
+                        print.skip=3, fix.dangling=TRUE) {
   # Demonstrates iterations of Markov Chain using PageRank algorithm
   #
   # Arguments: 
@@ -66,7 +69,7 @@ markov.demo <- function(graph, initial, damping.factor=0.85, print.skip=3) {
   print(graph)
   
   # Check if truly Markov, if not, change problem columns to sum to 1
-  graph <- check.markov(graph)
+  graph <- check.markov(graph, fix.dangling)
   if (graph[1] == FALSE & length(graph) == 1) {
     stop("ERROR: Data is not properly formatted.")
   }
@@ -74,7 +77,8 @@ markov.demo <- function(graph, initial, damping.factor=0.85, print.skip=3) {
   # Minimum difference between iteration probability values
   delta_threshold <- 1e-7
 
-  # Iterate until PageRank probability vector is stable to threshold delta, or max 1000 iterations
+  # Iterate until PageRank probability vector is stable to threshold delta, 
+  # or max 1000 iterations
   for (i in 1:1000) {
     previous <- probability
     
@@ -82,7 +86,7 @@ markov.demo <- function(graph, initial, damping.factor=0.85, print.skip=3) {
     probability <- (1 - damping.factor) / nx + damping.factor * (graph %*% probability)
     
     # Print alternate iterations.
-    if (i %in% 1:5 | (i %% print.skip == 0)) {
+    if (i %in% 1:3 | (i %% print.skip == 0)) {
       message("Iteration ", i, " PageRank (probability) vector: ")
       print(probability)
     }
@@ -103,12 +107,12 @@ markov.demo <- function(graph, initial, damping.factor=0.85, print.skip=3) {
 }
 
 
-eigen.demo <- function(graph, damping.factor=0.85) {
+eigen.demo <- function(graph, damping.factor=0.85, fix.dangling=TRUE) {
   
   nx <- nrow(graph)
   
   # Check if truly Markov, if not, change problem columns to sum to 1
-  graph <- check.markov(graph)
+  graph <- check.markov(graph, fix.dangling)
   if (graph[1] == FALSE & length(graph) == 1) {
     stop("ERROR: Data is not properly formatted.")
   }
@@ -122,7 +126,8 @@ eigen.demo <- function(graph, damping.factor=0.85) {
   eigen_output <- eigen(M)
   
   # Create eigenvector with an eigenvalue of 1 and change type to double (by default, it is complex type) 
-  eigen_vector <- as.double(eigen_output$vectors[, which.min(abs(eigen_output$values - 1))])
+  eigen_vector <- as.double(eigen_output$vectors[, abs(as.double(eigen_output$values) - 1) < 1e-6])
+  #eigen_vector <- as.double(eigen_output$vectors[, which.min(abs(eigen_output$values - 1))])
   
   # Normalize vector such that entire column sum = 1 
   steady_state_vector <- eigen_vector / sum(eigen_vector) 
@@ -134,7 +139,7 @@ eigen.demo <- function(graph, damping.factor=0.85) {
     message("Steady State Vector is:")
     return(steady_state_vector) 
   } else { 
-    message("WARNING: Steady State Vector DOES NOT sum to 1.") 
+    warning("WARNING: Normalized eigenvector DOES NOT sum to 1.") 
     print(steady_state_vector)
   } 
 }

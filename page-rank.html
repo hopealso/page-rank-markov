@@ -135,7 +135,7 @@ $(document).ready(function () {
 }
 
 
-check.markov &lt;- function(graph) {
+check.markov &lt;- function(graph, fix.dangling) {
   # Checks that the sum of every column = 1. 
   #   If it adds to 1, return the graph unchanged.
   #   If it adds to 0 (dangling node), return an adjusted graph, create each value 
@@ -154,8 +154,10 @@ check.markov &lt;- function(graph) {
     colsum &lt;- sum(graph[,i])
     if (!isTRUE(all.equal(colsum,1, tolerance=0.0001))) { 
       if (colsum == 0) {
-        graph[,i] &lt;- 1/nx 
-        adjusted &lt;- TRUE
+        if (fix.dangling) {
+          graph[,i] &lt;- 1/nx 
+          adjusted &lt;- TRUE
+        }
       } else {
         return(FALSE)
       }
@@ -171,7 +173,8 @@ check.markov &lt;- function(graph) {
 }
 
 
-markov.demo &lt;- function(graph, initial, random.factor=0.85, print.skip=3) {
+markov.demo &lt;- function(graph, initial, damping.factor=0.85, 
+                        print.skip=3, fix.dangling=TRUE) {
   # Demonstrates iterations of Markov Chain using PageRank algorithm
   #
   # Arguments: 
@@ -179,10 +182,10 @@ markov.demo &lt;- function(graph, initial, random.factor=0.85, print.skip=3) {
   #     representing the probability of state change from j to i, i.e. the probability
   #     of a hypothetical web surfer following a link from the jth page to the ith page.
   #   initial: Initial probability vector.
-  #   random.factor: Damping constant simulates random walk accounting for isolated pages.
+  #   damping.factor: Damping constant simulates random walk accounting for isolated pages.
   #     As written, this factor is the probability that a random surfer will *not*
   #     make a jump to a random page but will follow links.
-  #     Set random.factor to 1 to simulate basic Markov Chain without damping.
+  #     Set damping.factor to 1 to simulate basic Markov Chain without damping.
   #   print.skip: Skip count when printing graphs to demonstrate iterations.
   
   nx &lt;- nrow(graph) # number of nodes/pages
@@ -192,7 +195,7 @@ markov.demo &lt;- function(graph, initial, random.factor=0.85, print.skip=3) {
   print(graph)
   
   # Check if truly Markov, if not, change problem columns to sum to 1
-  graph &lt;- check.markov(graph)
+  graph &lt;- check.markov(graph, fix.dangling)
   if (graph[1] == FALSE &amp; length(graph) == 1) {
     stop(&quot;ERROR: Data is not properly formatted.&quot;)
   }
@@ -205,10 +208,10 @@ markov.demo &lt;- function(graph, initial, random.factor=0.85, print.skip=3) {
     previous &lt;- probability
     
     # PageRank formula
-    probability &lt;- (1 - random.factor) / nx + random.factor * (graph %*% probability)
+    probability &lt;- (1 - damping.factor) / nx + damping.factor * (graph %*% probability)
     
     # Print alternate iterations.
-    if (i %in% 1:5 | (i %% print.skip == 0)) {
+    if (i %in% 1:3 | (i %% print.skip == 0)) {
       message(&quot;Iteration &quot;, i, &quot; PageRank (probability) vector: &quot;)
       print(probability)
     }
@@ -229,35 +232,39 @@ markov.demo &lt;- function(graph, initial, random.factor=0.85, print.skip=3) {
 }
 
 
-eigen.demo &lt;- function(graph, random.factor=0.85) {
+eigen.demo &lt;- function(graph, damping.factor=0.85, fix.dangling=TRUE) {
   
   nx &lt;- nrow(graph)
   
   # Check if truly Markov, if not, change problem columns to sum to 1
-  graph &lt;- check.markov(graph)
+  graph &lt;- check.markov(graph, fix.dangling)
+  if (graph[1] == FALSE &amp; length(graph) == 1) {
+    stop(&quot;ERROR: Data is not properly formatted.&quot;)
+  }
   
   # Create Random Walk Matrix (B) 
   B &lt;- matrix(1/nx,nrow=nx,ncol=nx) 
   
   # Create PageRank Matrix based off Transition Matrix (graph) and Random Walk Matrix (B) 
-  M &lt;- (random.factor * graph) + ((1 - random.factor) * B) 
+  M &lt;- (damping.factor * graph) + ((1 - damping.factor) * B) 
   
   eigen_output &lt;- eigen(M)
   
   # Create eigenvector with an eigenvalue of 1 and change type to double (by default, it is complex type) 
-  eigen_vector &lt;- as.double(eigen_output$vectors[, which.min(abs(eigen_output$values - 1))])
-
+  eigen_vector &lt;- as.double(eigen_output$vectors[, abs(as.double(eigen_output$values) - 1) &lt; 1e-6])
+  #eigen_vector &lt;- as.double(eigen_output$vectors[, which.min(abs(eigen_output$values - 1))])
+  
   # Normalize vector such that entire column sum = 1 
   steady_state_vector &lt;- eigen_vector / sum(eigen_vector) 
   
   # Run check to see if Steady State Vector actually sums to 1 
   check &lt;- sum(steady_state_vector) 
   
-  if (isTRUE(all.equal(check,c(1)))) { 
+  if (isTRUE(all.equal(check,1))) { 
     message(&quot;Steady State Vector is:&quot;)
     return(steady_state_vector) 
   } else { 
-    message(&quot;WARNING: Steady State Vector DOES NOT sum to 1.&quot;) 
+    warning(&quot;Normalized eigenvector DOES NOT sum to 1.&quot;) 
     print(steady_state_vector)
   } 
 }</code></pre>
@@ -306,7 +313,7 @@ markov.demo(graph, initial, print.skip = 5)</code></pre>
 <pre class="r"><code>eigen.demo(graph)</code></pre>
 <pre><code>## Steady State Vector is:</code></pre>
 <pre><code>##  [1] 0.1 0.1 0.1 0.1 0.1 0.1 0.1 0.1 0.1 0.1</code></pre>
-<p>One of the requirements of using a Markov chain model is a matrix whose columns sum to 1. Here is an example of a matrix which does not.</p>
+<p>One of the requirements of using a Markov chain model is a matrix whose columns sum to 1. Here is an example of a matrix which does not, producing an error message.</p>
 <pre class="r"><code>(fail &lt;- matrix(c(.5, .5, .75, .5), nrow = 2, ncol = 2))</code></pre>
 <pre><code>##      [,1] [,2]
 ## [1,]  0.5 0.75
@@ -371,9 +378,59 @@ markov.demo(graph, initial, print.skip = 5)</code></pre>
 <pre class="r"><code>eigen.demo(graph)</code></pre>
 <pre><code>## Steady State Vector is:</code></pre>
 <pre><code>##  [1] 0.865 0.015 0.015 0.015 0.015 0.015 0.015 0.015 0.015 0.015</code></pre>
-<p>What happens if we vary the single hub example so that the hub points only to another page instead of itself? As shown, the hub has the largest PageRank, but the page it points to has nearly as much as the hub “passes” its PageRank to the other page.</p>
+<p>In the above example you see the impact of the damping factor in force. What if we ran the Markov Chain without the damping factor? As you can see below, the entire weight of probability in the steady state is placed on the single hub. This is true even though we started with an even probability of starting on each page.</p>
+<pre class="r"><code>markov.demo(graph, initial, damping.factor=1, print.skip = 5)</code></pre>
+<pre><code>## Graph input, representing original transition matrix:</code></pre>
+<pre><code>##       A B C D E F G H I J
+##  [1,] 1 1 1 1 1 1 1 1 1 1
+##  [2,] 0 0 0 0 0 0 0 0 0 0
+##  [3,] 0 0 0 0 0 0 0 0 0 0
+##  [4,] 0 0 0 0 0 0 0 0 0 0
+##  [5,] 0 0 0 0 0 0 0 0 0 0
+##  [6,] 0 0 0 0 0 0 0 0 0 0
+##  [7,] 0 0 0 0 0 0 0 0 0 0
+##  [8,] 0 0 0 0 0 0 0 0 0 0
+##  [9,] 0 0 0 0 0 0 0 0 0 0
+## [10,] 0 0 0 0 0 0 0 0 0 0</code></pre>
+<pre><code>## Iteration 1 PageRank (probability) vector:</code></pre>
+<pre><code>##       [,1]
+##  [1,]    1
+##  [2,]    0
+##  [3,]    0
+##  [4,]    0
+##  [5,]    0
+##  [6,]    0
+##  [7,]    0
+##  [8,]    0
+##  [9,]    0
+## [10,]    0</code></pre>
+<pre><code>## Iteration 2 PageRank (probability) vector:</code></pre>
+<pre><code>##       [,1]
+##  [1,]    1
+##  [2,]    0
+##  [3,]    0
+##  [4,]    0
+##  [5,]    0
+##  [6,]    0
+##  [7,]    0
+##  [8,]    0
+##  [9,]    0
+## [10,]    0</code></pre>
+<pre><code>## Probabilities converge to steady state vector at iteration number 2:</code></pre>
+<pre><code>##       [,1]
+##  [1,]    1
+##  [2,]    0
+##  [3,]    0
+##  [4,]    0
+##  [5,]    0
+##  [6,]    0
+##  [7,]    0
+##  [8,]    0
+##  [9,]    0
+## [10,]    0</code></pre>
+<p>Next, we vary the single hub example so that the hub points only to another page instead of itself. As shown, the hub has the largest PageRank, but the page it points to has nearly as much as the hub “passes” its PageRank to the other page.</p>
 <pre class="r"><code>graph &lt;- load.graph(&quot;graph-hub-transfer.csv&quot;)
-markov.demo(graph, initial, print.skip = 40)</code></pre>
+markov.demo(graph, initial, print.skip = 30)</code></pre>
 <pre><code>## Graph input, representing original transition matrix:</code></pre>
 <pre><code>##       A B C D E F G H I J
 ##  [1,] 0 1 1 1 1 1 1 1 1 1
@@ -422,22 +479,10 @@ markov.demo(graph, initial, print.skip = 40)</code></pre>
 ##  [8,] 0.0150
 ##  [9,] 0.0150
 ## [10,] 0.0150</code></pre>
-<pre><code>## Iteration 4 PageRank (probability) vector:</code></pre>
-<pre><code>##           [,1]
-##  [1,] 0.275695
-##  [2,] 0.604305
-##  [3,] 0.015000
-##  [4,] 0.015000
-##  [5,] 0.015000
-##  [6,] 0.015000
-##  [7,] 0.015000
-##  [8,] 0.015000
-##  [9,] 0.015000
-## [10,] 0.015000</code></pre>
-<pre><code>## Iteration 5 PageRank (probability) vector:</code></pre>
+<pre><code>## Iteration 30 PageRank (probability) vector:</code></pre>
 <pre><code>##            [,1]
-##  [1,] 0.6306593
-##  [2,] 0.2493408
+##  [1,] 0.4647627
+##  [2,] 0.4152373
 ##  [3,] 0.0150000
 ##  [4,] 0.0150000
 ##  [5,] 0.0150000
@@ -446,10 +491,10 @@ markov.demo(graph, initial, print.skip = 40)</code></pre>
 ##  [8,] 0.0150000
 ##  [9,] 0.0150000
 ## [10,] 0.0150000</code></pre>
-<pre><code>## Iteration 40 PageRank (probability) vector:</code></pre>
+<pre><code>## Iteration 60 PageRank (probability) vector:</code></pre>
 <pre><code>##            [,1]
-##  [1,] 0.4670154
-##  [2,] 0.4129846
+##  [1,] 0.4675462
+##  [2,] 0.4124538
 ##  [3,] 0.0150000
 ##  [4,] 0.0150000
 ##  [5,] 0.0150000
@@ -458,10 +503,10 @@ markov.demo(graph, initial, print.skip = 40)</code></pre>
 ##  [8,] 0.0150000
 ##  [9,] 0.0150000
 ## [10,] 0.0150000</code></pre>
-<pre><code>## Iteration 80 PageRank (probability) vector:</code></pre>
+<pre><code>## Iteration 90 PageRank (probability) vector:</code></pre>
 <pre><code>##            [,1]
-##  [1,] 0.4675667
-##  [2,] 0.4124333
+##  [1,] 0.4675674
+##  [2,] 0.4124326
 ##  [3,] 0.0150000
 ##  [4,] 0.0150000
 ##  [5,] 0.0150000
@@ -486,62 +531,6 @@ markov.demo(graph, initial, print.skip = 40)</code></pre>
 <pre><code>## Steady State Vector is:</code></pre>
 <pre><code>##  [1] 0.4675676 0.4124324 0.0150000 0.0150000 0.0150000 0.0150000 0.0150000
 ##  [8] 0.0150000 0.0150000 0.0150000</code></pre>
-<p>This example is from the Cornell lecture by Raluca Remus.</p>
-<pre class="r"><code>graph &lt;- load.graph(&quot;graph-remus.csv&quot;)
-nx &lt;- nrow(graph)
-initial &lt;- rep(1 / nx, nx)
-markov.demo(graph, initial, print.skip = 20)</code></pre>
-<pre><code>## Graph input, representing original transition matrix:</code></pre>
-<pre><code>##              A   B C   D
-## [1,] 0.0000000 0.0 1 0.5
-## [2,] 0.3333333 0.0 0 0.0
-## [3,] 0.3333333 0.5 0 0.5
-## [4,] 0.3333333 0.5 0 0.0</code></pre>
-<pre><code>## Iteration 1 PageRank (probability) vector:</code></pre>
-<pre><code>##           [,1]
-## [1,] 0.3562500
-## [2,] 0.1083333
-## [3,] 0.3208333
-## [4,] 0.2145833</code></pre>
-<pre><code>## Iteration 2 PageRank (probability) vector:</code></pre>
-<pre><code>##           [,1]
-## [1,] 0.4014062
-## [2,] 0.1384375
-## [3,] 0.2756771
-## [4,] 0.1844792</code></pre>
-<pre><code>## Iteration 3 PageRank (probability) vector:</code></pre>
-<pre><code>##           [,1]
-## [1,] 0.3502292
-## [2,] 0.1512318
-## [3,] 0.2884714
-## [4,] 0.2100677</code></pre>
-<pre><code>## Iteration 4 PageRank (probability) vector:</code></pre>
-<pre><code>##           [,1]
-## [1,] 0.3719794
-## [2,] 0.1367316
-## [3,] 0.2902839
-## [4,] 0.2010051</code></pre>
-<pre><code>## Iteration 5 PageRank (probability) vector:</code></pre>
-<pre><code>##           [,1]
-## [1,] 0.3696685
-## [2,] 0.1428942
-## [3,] 0.2864323
-## [4,] 0.2010051</code></pre>
-<pre><code>## Iteration 20 PageRank (probability) vector:</code></pre>
-<pre><code>##           [,1]
-## [1,] 0.3681507
-## [2,] 0.1418094
-## [3,] 0.2879616
-## [4,] 0.2020783</code></pre>
-<pre><code>## Probabilities converge to steady state vector at iteration number 20:</code></pre>
-<pre><code>##           [,1]
-## [1,] 0.3681507
-## [2,] 0.1418094
-## [3,] 0.2879616
-## [4,] 0.2020783</code></pre>
-<pre class="r"><code>eigen.demo(graph)</code></pre>
-<pre><code>## Steady State Vector is:</code></pre>
-<pre><code>## [1] 0.3681507 0.1418094 0.2879616 0.2020783</code></pre>
 <p>This more complex example demonstrates two hubs.</p>
 <pre class="r"><code>graph &lt;- load.graph(&quot;graph-dual-hub.csv&quot;)
 nx &lt;- nrow(graph)
@@ -612,32 +601,6 @@ markov.demo(graph, initial, print.skip = 20)</code></pre>
 ##  [9,] 0.01572268
 ## [10,] 0.01572268
 ## [11,] 0.01572268</code></pre>
-<pre><code>## Iteration 4 PageRank (probability) vector:</code></pre>
-<pre><code>##             [,1]
-##  [1,] 0.02213175
-##  [2,] 0.35763727
-##  [3,] 0.36591038
-##  [4,] 0.01544961
-##  [5,] 0.08785192
-##  [6,] 0.07377103
-##  [7,] 0.01544961
-##  [8,] 0.01544961
-##  [9,] 0.01544961
-## [10,] 0.01544961
-## [11,] 0.01544961</code></pre>
-<pre><code>## Iteration 5 PageRank (probability) vector:</code></pre>
-<pre><code>##             [,1]
-##  [1,] 0.02191263
-##  [2,] 0.42132446
-##  [3,] 0.31933823
-##  [4,] 0.01534654
-##  [5,] 0.09266182
-##  [6,] 0.05268361
-##  [7,] 0.01534654
-##  [8,] 0.01534654
-##  [9,] 0.01534654
-## [10,] 0.01534654
-## [11,] 0.01534654</code></pre>
 <pre><code>## Iteration 20 PageRank (probability) vector:</code></pre>
 <pre><code>##             [,1]
 ##  [1,] 0.02183629
@@ -720,6 +683,543 @@ markov.demo(graph, initial, print.skip = 20)</code></pre>
 <pre><code>## Steady State Vector is:</code></pre>
 <pre><code>##  [1] 0.02183629 0.39908880 0.35454919 0.01532371 0.08228752 0.05029591
 ##  [7] 0.01532371 0.01532371 0.01532371 0.01532371 0.01532371</code></pre>
+<p>What if we were to attempt to run our Markov chain on the above example without correcting for the dangling node, Page A which has no outgoing links?</p>
+<pre class="r"><code>markov.demo(graph, initial, print.skip = 20, fix.dangling = FALSE)</code></pre>
+<pre><code>## Graph input, representing original transition matrix:</code></pre>
+<pre><code>##       A B C   D   E   F   G   H   I J K
+##  [1,] 0 0 0 0.5 0.0 0.0 0.0 0.0 0.0 0 0
+##  [2,] 0 0 1 0.5 0.5 0.5 0.5 0.5 0.5 0 0
+##  [3,] 0 1 0 0.0 0.0 0.0 0.0 0.0 0.0 0 0
+##  [4,] 0 0 0 0.0 0.0 0.0 0.0 0.0 0.0 0 0
+##  [5,] 0 0 0 0.0 0.0 0.5 0.5 0.5 0.5 1 1
+##  [6,] 0 0 0 0.0 0.5 0.0 0.0 0.0 0.0 0 0
+##  [7,] 0 0 0 0.0 0.0 0.0 0.0 0.0 0.0 0 0
+##  [8,] 0 0 0 0.0 0.0 0.0 0.0 0.0 0.0 0 0
+##  [9,] 0 0 0 0.0 0.0 0.0 0.0 0.0 0.0 0 0
+## [10,] 0 0 0 0.0 0.0 0.0 0.0 0.0 0.0 0 0
+## [11,] 0 0 0 0.0 0.0 0.0 0.0 0.0 0.0 0 0</code></pre>
+<pre><code>## Iteration 1 PageRank (probability) vector:</code></pre>
+<pre><code>##             [,1]
+##  [1,] 0.05227273
+##  [2,] 0.32272727
+##  [3,] 0.09090909
+##  [4,] 0.01363636
+##  [5,] 0.32272727
+##  [6,] 0.05227273
+##  [7,] 0.01363636
+##  [8,] 0.01363636
+##  [9,] 0.01363636
+## [10,] 0.01363636
+## [11,] 0.01363636</code></pre>
+<pre><code>## Iteration 2 PageRank (probability) vector:</code></pre>
+<pre><code>##             [,1]
+##  [1,] 0.01943182
+##  [2,] 0.27346591
+##  [3,] 0.28795455
+##  [4,] 0.01363636
+##  [5,] 0.07642045
+##  [6,] 0.15079545
+##  [7,] 0.01363636
+##  [8,] 0.01363636
+##  [9,] 0.01363636
+## [10,] 0.01363636
+## [11,] 0.01363636</code></pre>
+<pre><code>## Iteration 3 PageRank (probability) vector:</code></pre>
+<pre><code>##             [,1]
+##  [1,] 0.01943182
+##  [2,] 0.37814631
+##  [3,] 0.24608239
+##  [4,] 0.01363636
+##  [5,] 0.11829261
+##  [6,] 0.04611506
+##  [7,] 0.01363636
+##  [8,] 0.01363636
+##  [9,] 0.01363636
+## [10,] 0.01363636
+## [11,] 0.01363636</code></pre>
+<pre><code>## Iteration 20 PageRank (probability) vector:</code></pre>
+<pre><code>##             [,1]
+##  [1,] 0.01943182
+##  [2,] 0.35271525
+##  [3,] 0.31793690
+##  [4,] 0.01363636
+##  [5,] 0.07322655
+##  [6,] 0.04475767
+##  [7,] 0.01363636
+##  [8,] 0.01363636
+##  [9,] 0.01363636
+## [10,] 0.01363636
+## [11,] 0.01363636</code></pre>
+<pre><code>## Iteration 40 PageRank (probability) vector:</code></pre>
+<pre><code>##             [,1]
+##  [1,] 0.01943182
+##  [2,] 0.35504956
+##  [3,] 0.31560262
+##  [4,] 0.01363636
+##  [5,] 0.07322654
+##  [6,] 0.04475765
+##  [7,] 0.01363636
+##  [8,] 0.01363636
+##  [9,] 0.01363636
+## [10,] 0.01363636
+## [11,] 0.01363636</code></pre>
+<pre><code>## Iteration 60 PageRank (probability) vector:</code></pre>
+<pre><code>##             [,1]
+##  [1,] 0.01943182
+##  [2,] 0.35514003
+##  [3,] 0.31551214
+##  [4,] 0.01363636
+##  [5,] 0.07322654
+##  [6,] 0.04475765
+##  [7,] 0.01363636
+##  [8,] 0.01363636
+##  [9,] 0.01363636
+## [10,] 0.01363636
+## [11,] 0.01363636</code></pre>
+<pre><code>## Iteration 80 PageRank (probability) vector:</code></pre>
+<pre><code>##             [,1]
+##  [1,] 0.01943182
+##  [2,] 0.35514354
+##  [3,] 0.31550863
+##  [4,] 0.01363636
+##  [5,] 0.07322654
+##  [6,] 0.04475765
+##  [7,] 0.01363636
+##  [8,] 0.01363636
+##  [9,] 0.01363636
+## [10,] 0.01363636
+## [11,] 0.01363636</code></pre>
+<pre><code>## Probabilities converge to steady state vector at iteration number 87:</code></pre>
+<pre><code>##             [,1]
+##  [1,] 0.01943182
+##  [2,] 0.35514373
+##  [3,] 0.31550845
+##  [4,] 0.01363636
+##  [5,] 0.07322654
+##  [6,] 0.04475765
+##  [7,] 0.01363636
+##  [8,] 0.01363636
+##  [9,] 0.01363636
+## [10,] 0.01363636
+## [11,] 0.01363636</code></pre>
+<pre class="r"><code>eigen.demo(graph, fix.dangling = FALSE)</code></pre>
+<pre><code>## Warning in eigen.demo(graph, fix.dangling = FALSE): Normalized eigenvector
+## DOES NOT sum to 1.</code></pre>
+<pre><code>## numeric(0)</code></pre>
+<p>Our final example contains a selection of pages that are completely disconnected from the others.</p>
+<pre class="r"><code>graph &lt;- load.graph(&quot;graph-disconnected.csv&quot;)
+nx &lt;- nrow(graph)
+initial &lt;- rep(1 / nx, nx)
+markov.demo(graph, initial, print.skip = 20)</code></pre>
+<pre><code>## Graph input, representing original transition matrix:</code></pre>
+<pre><code>##       A B C D E F G H I J K L M N O P Q R S T
+##  [1,] 0 1 1 0 0 1 1 1 1 0 0 0 0 0 0 0 0 0 0 0
+##  [2,] 1 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 0 0 0 0
+##  [3,] 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1
+##  [4,] 0 0 0 0 1 0 0 0 0 0 0 0 0 1 1 1 0 0 0 0
+##  [5,] 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+##  [6,] 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+##  [7,] 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+##  [8,] 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+##  [9,] 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+## [10,] 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+## [11,] 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+## [12,] 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+## [13,] 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+## [14,] 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+## [15,] 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+## [16,] 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+## [17,] 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+## [18,] 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+## [19,] 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+## [20,] 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0</code></pre>
+<pre><code>## Iteration 1 PageRank (probability) vector:</code></pre>
+<pre><code>##         [,1]
+##  [1,] 0.2625
+##  [2,] 0.2200
+##  [3,] 0.1775
+##  [4,] 0.1775
+##  [5,] 0.0500
+##  [6,] 0.0075
+##  [7,] 0.0075
+##  [8,] 0.0075
+##  [9,] 0.0075
+## [10,] 0.0075
+## [11,] 0.0075
+## [12,] 0.0075
+## [13,] 0.0075
+## [14,] 0.0075
+## [15,] 0.0075
+## [16,] 0.0075
+## [17,] 0.0075
+## [18,] 0.0075
+## [19,] 0.0075
+## [20,] 0.0075</code></pre>
+<pre><code>## Iteration 2 PageRank (probability) vector:</code></pre>
+<pre><code>##           [,1]
+##  [1,] 0.370875
+##  [2,] 0.256125
+##  [3,] 0.033000
+##  [4,] 0.069125
+##  [5,] 0.158375
+##  [6,] 0.007500
+##  [7,] 0.007500
+##  [8,] 0.007500
+##  [9,] 0.007500
+## [10,] 0.007500
+## [11,] 0.007500
+## [12,] 0.007500
+## [13,] 0.007500
+## [14,] 0.007500
+## [15,] 0.007500
+## [16,] 0.007500
+## [17,] 0.007500
+## [18,] 0.007500
+## [19,] 0.007500
+## [20,] 0.007500</code></pre>
+<pre><code>## Iteration 3 PageRank (probability) vector:</code></pre>
+<pre><code>##             [,1]
+##  [1,] 0.27875625
+##  [2,] 0.34824375
+##  [3,] 0.03300000
+##  [4,] 0.16124375
+##  [5,] 0.06625625
+##  [6,] 0.00750000
+##  [7,] 0.00750000
+##  [8,] 0.00750000
+##  [9,] 0.00750000
+## [10,] 0.00750000
+## [11,] 0.00750000
+## [12,] 0.00750000
+## [13,] 0.00750000
+## [14,] 0.00750000
+## [15,] 0.00750000
+## [16,] 0.00750000
+## [17,] 0.00750000
+## [18,] 0.00750000
+## [19,] 0.00750000
+## [20,] 0.00750000</code></pre>
+<pre><code>## Iteration 20 PageRank (probability) vector:</code></pre>
+<pre><code>##            [,1]
+##  [1,] 0.3237523
+##  [2,] 0.3032477
+##  [3,] 0.0330000
+##  [4,] 0.1162477
+##  [5,] 0.1112523
+##  [6,] 0.0075000
+##  [7,] 0.0075000
+##  [8,] 0.0075000
+##  [9,] 0.0075000
+## [10,] 0.0075000
+## [11,] 0.0075000
+## [12,] 0.0075000
+## [13,] 0.0075000
+## [14,] 0.0075000
+## [15,] 0.0075000
+## [16,] 0.0075000
+## [17,] 0.0075000
+## [18,] 0.0075000
+## [19,] 0.0075000
+## [20,] 0.0075000</code></pre>
+<pre><code>## Iteration 40 PageRank (probability) vector:</code></pre>
+<pre><code>##            [,1]
+##  [1,] 0.3211846
+##  [2,] 0.3058154
+##  [3,] 0.0330000
+##  [4,] 0.1188154
+##  [5,] 0.1086846
+##  [6,] 0.0075000
+##  [7,] 0.0075000
+##  [8,] 0.0075000
+##  [9,] 0.0075000
+## [10,] 0.0075000
+## [11,] 0.0075000
+## [12,] 0.0075000
+## [13,] 0.0075000
+## [14,] 0.0075000
+## [15,] 0.0075000
+## [16,] 0.0075000
+## [17,] 0.0075000
+## [18,] 0.0075000
+## [19,] 0.0075000
+## [20,] 0.0075000</code></pre>
+<pre><code>## Iteration 60 PageRank (probability) vector:</code></pre>
+<pre><code>##            [,1]
+##  [1,] 0.3210851
+##  [2,] 0.3059149
+##  [3,] 0.0330000
+##  [4,] 0.1189149
+##  [5,] 0.1085851
+##  [6,] 0.0075000
+##  [7,] 0.0075000
+##  [8,] 0.0075000
+##  [9,] 0.0075000
+## [10,] 0.0075000
+## [11,] 0.0075000
+## [12,] 0.0075000
+## [13,] 0.0075000
+## [14,] 0.0075000
+## [15,] 0.0075000
+## [16,] 0.0075000
+## [17,] 0.0075000
+## [18,] 0.0075000
+## [19,] 0.0075000
+## [20,] 0.0075000</code></pre>
+<pre><code>## Iteration 80 PageRank (probability) vector:</code></pre>
+<pre><code>##            [,1]
+##  [1,] 0.3210812
+##  [2,] 0.3059188
+##  [3,] 0.0330000
+##  [4,] 0.1189188
+##  [5,] 0.1085812
+##  [6,] 0.0075000
+##  [7,] 0.0075000
+##  [8,] 0.0075000
+##  [9,] 0.0075000
+## [10,] 0.0075000
+## [11,] 0.0075000
+## [12,] 0.0075000
+## [13,] 0.0075000
+## [14,] 0.0075000
+## [15,] 0.0075000
+## [16,] 0.0075000
+## [17,] 0.0075000
+## [18,] 0.0075000
+## [19,] 0.0075000
+## [20,] 0.0075000</code></pre>
+<pre><code>## Probabilities converge to steady state vector at iteration number 88:</code></pre>
+<pre><code>##            [,1]
+##  [1,] 0.3210811
+##  [2,] 0.3059189
+##  [3,] 0.0330000
+##  [4,] 0.1189189
+##  [5,] 0.1085811
+##  [6,] 0.0075000
+##  [7,] 0.0075000
+##  [8,] 0.0075000
+##  [9,] 0.0075000
+## [10,] 0.0075000
+## [11,] 0.0075000
+## [12,] 0.0075000
+## [13,] 0.0075000
+## [14,] 0.0075000
+## [15,] 0.0075000
+## [16,] 0.0075000
+## [17,] 0.0075000
+## [18,] 0.0075000
+## [19,] 0.0075000
+## [20,] 0.0075000</code></pre>
+<pre class="r"><code>eigen.demo(graph)</code></pre>
+<pre><code>## Warning in eigen.demo(graph): imaginary parts discarded in coercion</code></pre>
+<pre><code>## Steady State Vector is:</code></pre>
+<pre><code>##  [1] 0.3210811 0.3059189 0.0330000 0.1189189 0.1085811 0.0075000 0.0075000
+##  [8] 0.0075000 0.0075000 0.0075000 0.0075000 0.0075000 0.0075000 0.0075000
+## [15] 0.0075000 0.0075000 0.0075000 0.0075000 0.0075000 0.0075000</code></pre>
+<p>Google’s damping factor corrects for disconnected pages. Let’s run our Markov chain and eigenvector calculation without using it.</p>
+<pre class="r"><code>markov.demo(graph, initial, damping.factor = 1, print.skip = 250)</code></pre>
+<pre><code>## Graph input, representing original transition matrix:</code></pre>
+<pre><code>##       A B C D E F G H I J K L M N O P Q R S T
+##  [1,] 0 1 1 0 0 1 1 1 1 0 0 0 0 0 0 0 0 0 0 0
+##  [2,] 1 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 0 0 0 0
+##  [3,] 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1
+##  [4,] 0 0 0 0 1 0 0 0 0 0 0 0 0 1 1 1 0 0 0 0
+##  [5,] 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+##  [6,] 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+##  [7,] 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+##  [8,] 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+##  [9,] 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+## [10,] 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+## [11,] 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+## [12,] 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+## [13,] 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+## [14,] 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+## [15,] 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+## [16,] 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+## [17,] 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+## [18,] 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+## [19,] 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+## [20,] 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0</code></pre>
+<pre><code>## Iteration 1 PageRank (probability) vector:</code></pre>
+<pre><code>##       [,1]
+##  [1,] 0.30
+##  [2,] 0.25
+##  [3,] 0.20
+##  [4,] 0.20
+##  [5,] 0.05
+##  [6,] 0.00
+##  [7,] 0.00
+##  [8,] 0.00
+##  [9,] 0.00
+## [10,] 0.00
+## [11,] 0.00
+## [12,] 0.00
+## [13,] 0.00
+## [14,] 0.00
+## [15,] 0.00
+## [16,] 0.00
+## [17,] 0.00
+## [18,] 0.00
+## [19,] 0.00
+## [20,] 0.00</code></pre>
+<pre><code>## Iteration 2 PageRank (probability) vector:</code></pre>
+<pre><code>##       [,1]
+##  [1,] 0.45
+##  [2,] 0.30
+##  [3,] 0.00
+##  [4,] 0.05
+##  [5,] 0.20
+##  [6,] 0.00
+##  [7,] 0.00
+##  [8,] 0.00
+##  [9,] 0.00
+## [10,] 0.00
+## [11,] 0.00
+## [12,] 0.00
+## [13,] 0.00
+## [14,] 0.00
+## [15,] 0.00
+## [16,] 0.00
+## [17,] 0.00
+## [18,] 0.00
+## [19,] 0.00
+## [20,] 0.00</code></pre>
+<pre><code>## Iteration 3 PageRank (probability) vector:</code></pre>
+<pre><code>##       [,1]
+##  [1,] 0.30
+##  [2,] 0.45
+##  [3,] 0.00
+##  [4,] 0.20
+##  [5,] 0.05
+##  [6,] 0.00
+##  [7,] 0.00
+##  [8,] 0.00
+##  [9,] 0.00
+## [10,] 0.00
+## [11,] 0.00
+## [12,] 0.00
+## [13,] 0.00
+## [14,] 0.00
+## [15,] 0.00
+## [16,] 0.00
+## [17,] 0.00
+## [18,] 0.00
+## [19,] 0.00
+## [20,] 0.00</code></pre>
+<pre><code>## Iteration 250 PageRank (probability) vector:</code></pre>
+<pre><code>##       [,1]
+##  [1,] 0.45
+##  [2,] 0.30
+##  [3,] 0.00
+##  [4,] 0.05
+##  [5,] 0.20
+##  [6,] 0.00
+##  [7,] 0.00
+##  [8,] 0.00
+##  [9,] 0.00
+## [10,] 0.00
+## [11,] 0.00
+## [12,] 0.00
+## [13,] 0.00
+## [14,] 0.00
+## [15,] 0.00
+## [16,] 0.00
+## [17,] 0.00
+## [18,] 0.00
+## [19,] 0.00
+## [20,] 0.00</code></pre>
+<pre><code>## Iteration 500 PageRank (probability) vector:</code></pre>
+<pre><code>##       [,1]
+##  [1,] 0.45
+##  [2,] 0.30
+##  [3,] 0.00
+##  [4,] 0.05
+##  [5,] 0.20
+##  [6,] 0.00
+##  [7,] 0.00
+##  [8,] 0.00
+##  [9,] 0.00
+## [10,] 0.00
+## [11,] 0.00
+## [12,] 0.00
+## [13,] 0.00
+## [14,] 0.00
+## [15,] 0.00
+## [16,] 0.00
+## [17,] 0.00
+## [18,] 0.00
+## [19,] 0.00
+## [20,] 0.00</code></pre>
+<pre><code>## Iteration 750 PageRank (probability) vector:</code></pre>
+<pre><code>##       [,1]
+##  [1,] 0.45
+##  [2,] 0.30
+##  [3,] 0.00
+##  [4,] 0.05
+##  [5,] 0.20
+##  [6,] 0.00
+##  [7,] 0.00
+##  [8,] 0.00
+##  [9,] 0.00
+## [10,] 0.00
+## [11,] 0.00
+## [12,] 0.00
+## [13,] 0.00
+## [14,] 0.00
+## [15,] 0.00
+## [16,] 0.00
+## [17,] 0.00
+## [18,] 0.00
+## [19,] 0.00
+## [20,] 0.00</code></pre>
+<pre><code>## Iteration 1000 PageRank (probability) vector:</code></pre>
+<pre><code>##       [,1]
+##  [1,] 0.45
+##  [2,] 0.30
+##  [3,] 0.00
+##  [4,] 0.05
+##  [5,] 0.20
+##  [6,] 0.00
+##  [7,] 0.00
+##  [8,] 0.00
+##  [9,] 0.00
+## [10,] 0.00
+## [11,] 0.00
+## [12,] 0.00
+## [13,] 0.00
+## [14,] 0.00
+## [15,] 0.00
+## [16,] 0.00
+## [17,] 0.00
+## [18,] 0.00
+## [19,] 0.00
+## [20,] 0.00</code></pre>
+<pre><code>## Did not reach steady state within 1000 iterations.</code></pre>
+<pre><code>##       [,1]
+##  [1,] 0.45
+##  [2,] 0.30
+##  [3,] 0.00
+##  [4,] 0.05
+##  [5,] 0.20
+##  [6,] 0.00
+##  [7,] 0.00
+##  [8,] 0.00
+##  [9,] 0.00
+## [10,] 0.00
+## [11,] 0.00
+## [12,] 0.00
+## [13,] 0.00
+## [14,] 0.00
+## [15,] 0.00
+## [16,] 0.00
+## [17,] 0.00
+## [18,] 0.00
+## [19,] 0.00
+## [20,] 0.00</code></pre>
+<pre class="r"><code>eigen.demo(graph, damping.factor = 1)</code></pre>
+<pre><code>## Steady State Vector is:</code></pre>
+<pre><code>##  [1] 0.25 0.25 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00
+## [15] 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.25 0.25 0.00 0.00 0.00
+## [29] 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00</code></pre>
 
 
 
