@@ -21,7 +21,7 @@ check.markov <- function(graph, fix.dangling) {
   #   graph: Matrix of a graph of interlinked web pages
   
   nx <- nrow(graph)
-
+  
   # Loop through columns and normalize.    
   adjusted <- FALSE
   for (i in 1:nx) { 
@@ -42,7 +42,7 @@ check.markov <- function(graph, fix.dangling) {
     message("Graph adjusted to correct dangling nodes:")
     print(graph)
   }
-
+  
   return(graph)
 }
 
@@ -76,7 +76,7 @@ markov.demo <- function(graph, initial, damping.factor=0.85,
   
   # Minimum difference between iteration probability values
   delta_threshold <- 1e-7
-
+  
   # Iterate until PageRank probability vector is stable to threshold delta, 
   # or max 1000 iterations
   for (i in 1:1000) {
@@ -139,7 +139,7 @@ eigen.demo <- function(graph, damping.factor=0.85, fix.dangling=TRUE) {
     message("Steady State Vector is:")
     return(steady_state_vector) 
   } else { 
-    warning("WARNING: Normalized eigenvector DOES NOT sum to 1.") 
+    warning("Normalized eigenvector DOES NOT sum to 1.") 
     print(steady_state_vector)
   } 
 }
