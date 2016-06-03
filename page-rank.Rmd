@@ -8,6 +8,8 @@ output: pdf_document
 
 This example demonstrates Markov Chains using the PageRank algorithm.
 
+# Functions
+
 ```{r functions}
 load.graph <- function(graph.file) {
   # Loads graph used by other functions in demo. Assumes file is in working directory.
@@ -32,7 +34,7 @@ check.markov <- function(graph, fix.dangling) {
   #   graph: Matrix of a graph of interlinked web pages
   
   nx <- nrow(graph)
-
+  
   # Loop through columns and normalize.    
   adjusted <- FALSE
   for (i in 1:nx) { 
@@ -53,7 +55,7 @@ check.markov <- function(graph, fix.dangling) {
     message("Graph adjusted to correct dangling nodes:")
     print(graph)
   }
-
+  
   return(graph)
 }
 
@@ -87,7 +89,7 @@ markov.demo <- function(graph, initial, damping.factor=0.85,
   
   # Minimum difference between iteration probability values
   delta_threshold <- 1e-7
-
+  
   # Iterate until PageRank probability vector is stable to threshold delta, 
   # or max 1000 iterations
   for (i in 1:1000) {
@@ -136,10 +138,14 @@ eigen.demo <- function(graph, damping.factor=0.85, fix.dangling=TRUE) {
   
   eigen_output <- eigen(M)
   
-  # Create eigenvector with an eigenvalue of 1 and change type to double (by default, it is complex type) 
-  eigen_vector <- as.double(eigen_output$vectors[, abs(as.double(eigen_output$values) - 1) < 1e-6])
-  #eigen_vector <- as.double(eigen_output$vectors[, which.min(abs(eigen_output$values - 1))])
-  
+  # Create eigenvector with an eigenvalue of 1 and change type to double (by default, 
+  # it is complex type) 
+  where.eigenvalue.1 <- abs(as.double(eigen_output$values) - 1) < 1e-6
+  if (!any(where.eigenvalue.1)) {
+    stop("There is no eigenvalue of 1.")
+  }
+  eigen_vector <- as.double(eigen_output$vectors[, where.eigenvalue.1])
+
   # Normalize vector such that entire column sum = 1 
   steady_state_vector <- eigen_vector / sum(eigen_vector) 
   
@@ -147,7 +153,7 @@ eigen.demo <- function(graph, damping.factor=0.85, fix.dangling=TRUE) {
   check <- sum(steady_state_vector) 
   
   if (isTRUE(all.equal(check,1))) { 
-    message("Steady State Vector is:")
+    message("Steady state vector is:")
     return(steady_state_vector) 
   } else { 
     warning("Normalized eigenvector DOES NOT sum to 1.") 
@@ -155,6 +161,8 @@ eigen.demo <- function(graph, damping.factor=0.85, fix.dangling=TRUE) {
   } 
 }
 ```
+
+# Simple Example
 
 Let's start with a simple example. This example confirms that if every page points equally to every other page, the PageRank will be evenly distributed.
 
@@ -175,6 +183,8 @@ One of the requirements of using a Markov chain model is a matrix whose columns 
 markov.demo(fail, rep(1/2, 2))
 ```
 
+# Single Hub Example
+
 This example represents a "single hub". Note that all pages point to one hub.
 
 ```{r hub}
@@ -183,11 +193,15 @@ markov.demo(graph, initial, print.skip = 5)
 eigen.demo(graph)
 ```
 
+## Impact of Damping Factor
+
 In the above example you see the impact of the damping factor in force. What if we ran the Markov Chain without the damping factor? As you can see below, the entire weight of probability in the steady state is placed on the single hub. This is true even though we started with an even probability of starting on each page.
 
 ```{r hub-no-damping}
 markov.demo(graph, initial, damping.factor=1, print.skip = 5)
 ```
+
+## Transfer of Influence
 
 Next, we vary the single hub example so that the hub points only to another page instead of itself. As shown, the hub has the largest PageRank, but the page it points to has nearly as much as the hub "passes" its PageRank to the other page.
 
@@ -196,6 +210,8 @@ graph <- load.graph("graph-hub-transfer.csv")
 markov.demo(graph, initial, print.skip = 30)
 eigen.demo(graph)
 ```
+
+# Dual Hub -- More Complex Example 
 
 This more complex example demonstrates two hubs.
 
@@ -207,12 +223,16 @@ markov.demo(graph, initial, print.skip = 20)
 eigen.demo(graph)
 ```
 
+## Demonstration of Case for Dangling Node Correction
+
 What if we were to attempt to run our Markov chain on the above example without correcting for the dangling node, Page A  which has no outgoing links?
 
-```{r dual-dangling}
+```{r dual-dangling, error=TRUE}
 markov.demo(graph, initial, print.skip = 20, fix.dangling = FALSE)
 eigen.demo(graph, fix.dangling = FALSE)
 ```
+
+# Disconnected Pages Example
 
 Our final example contains a selection of pages that are completely disconnected from the others.
 
@@ -223,6 +243,8 @@ initial <- rep(1 / nx, nx)
 markov.demo(graph, initial, print.skip = 20)
 eigen.demo(graph)
 ```
+
+## Demonstration of Case for Damping Factor Correction
 
 Google's damping factor corrects for disconnected pages. Let's run our Markov chain and eigenvector calculation without using it.
 

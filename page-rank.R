@@ -125,10 +125,14 @@ eigen.demo <- function(graph, damping.factor=0.85, fix.dangling=TRUE) {
   
   eigen_output <- eigen(M)
   
-  # Create eigenvector with an eigenvalue of 1 and change type to double (by default, it is complex type) 
-  eigen_vector <- as.double(eigen_output$vectors[, abs(as.double(eigen_output$values) - 1) < 1e-6])
-  #eigen_vector <- as.double(eigen_output$vectors[, which.min(abs(eigen_output$values - 1))])
-  
+  # Create eigenvector with an eigenvalue of 1 and change type to double (by default, 
+  # it is complex type) 
+  where.eigenvalue.1 <- abs(as.double(eigen_output$values) - 1) < 1e-6
+  if (!any(where.eigenvalue.1)) {
+    stop("There is no eigenvalue of 1.")
+  }
+  eigen_vector <- as.double(eigen_output$vectors[, where.eigenvalue.1])
+
   # Normalize vector such that entire column sum = 1 
   steady_state_vector <- eigen_vector / sum(eigen_vector) 
   
@@ -136,7 +140,7 @@ eigen.demo <- function(graph, damping.factor=0.85, fix.dangling=TRUE) {
   check <- sum(steady_state_vector) 
   
   if (isTRUE(all.equal(check,1))) { 
-    message("Steady State Vector is:")
+    message("Steady state vector is:")
     return(steady_state_vector) 
   } else { 
     warning("Normalized eigenvector DOES NOT sum to 1.") 

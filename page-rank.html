@@ -124,6 +124,8 @@ $(document).ready(function () {
 
 
 <p>This example demonstrates Markov Chains using the PageRank algorithm.</p>
+<div id="functions" class="section level1">
+<h1>Functions</h1>
 <pre class="r"><code>load.graph &lt;- function(graph.file) {
   # Loads graph used by other functions in demo. Assumes file is in working directory.
   #
@@ -147,7 +149,7 @@ check.markov &lt;- function(graph, fix.dangling) {
   #   graph: Matrix of a graph of interlinked web pages
   
   nx &lt;- nrow(graph)
-
+  
   # Loop through columns and normalize.    
   adjusted &lt;- FALSE
   for (i in 1:nx) { 
@@ -168,7 +170,7 @@ check.markov &lt;- function(graph, fix.dangling) {
     message(&quot;Graph adjusted to correct dangling nodes:&quot;)
     print(graph)
   }
-
+  
   return(graph)
 }
 
@@ -202,8 +204,9 @@ markov.demo &lt;- function(graph, initial, damping.factor=0.85,
   
   # Minimum difference between iteration probability values
   delta_threshold &lt;- 1e-7
-
-  # Iterate until PageRank probability vector is stable to threshold delta, or max 1000 iterations
+  
+  # Iterate until PageRank probability vector is stable to threshold delta, 
+  # or max 1000 iterations
   for (i in 1:1000) {
     previous &lt;- probability
     
@@ -250,10 +253,14 @@ eigen.demo &lt;- function(graph, damping.factor=0.85, fix.dangling=TRUE) {
   
   eigen_output &lt;- eigen(M)
   
-  # Create eigenvector with an eigenvalue of 1 and change type to double (by default, it is complex type) 
-  eigen_vector &lt;- as.double(eigen_output$vectors[, abs(as.double(eigen_output$values) - 1) &lt; 1e-6])
-  #eigen_vector &lt;- as.double(eigen_output$vectors[, which.min(abs(eigen_output$values - 1))])
-  
+  # Create eigenvector with an eigenvalue of 1 and change type to double (by default, 
+  # it is complex type) 
+  where.eigenvalue.1 &lt;- abs(as.double(eigen_output$values) - 1) &lt; 1e-6
+  if (!any(where.eigenvalue.1)) {
+    stop(&quot;There is no eigenvalue of 1.&quot;)
+  }
+  eigen_vector &lt;- as.double(eigen_output$vectors[, where.eigenvalue.1])
+
   # Normalize vector such that entire column sum = 1 
   steady_state_vector &lt;- eigen_vector / sum(eigen_vector) 
   
@@ -261,13 +268,16 @@ eigen.demo &lt;- function(graph, damping.factor=0.85, fix.dangling=TRUE) {
   check &lt;- sum(steady_state_vector) 
   
   if (isTRUE(all.equal(check,1))) { 
-    message(&quot;Steady State Vector is:&quot;)
+    message(&quot;Steady state vector is:&quot;)
     return(steady_state_vector) 
   } else { 
     warning(&quot;Normalized eigenvector DOES NOT sum to 1.&quot;) 
     print(steady_state_vector)
   } 
 }</code></pre>
+</div>
+<div id="simple-example" class="section level1">
+<h1>Simple Example</h1>
 <p>Let’s start with a simple example. This example confirms that if every page points equally to every other page, the PageRank will be evenly distributed.</p>
 <p>Our first output is the graph itself, followed by the Markov iterations which calculate PageRank and gradually reach a steady state.</p>
 <pre class="r"><code>graph &lt;- load.graph(&quot;graph-massive-ball.csv&quot;)
@@ -311,7 +321,7 @@ markov.demo(graph, initial, print.skip = 5)</code></pre>
 ##  [9,]  0.1
 ## [10,]  0.1</code></pre>
 <pre class="r"><code>eigen.demo(graph)</code></pre>
-<pre><code>## Steady State Vector is:</code></pre>
+<pre><code>## Steady state vector is:</code></pre>
 <pre><code>##  [1] 0.1 0.1 0.1 0.1 0.1 0.1 0.1 0.1 0.1 0.1</code></pre>
 <p>One of the requirements of using a Markov chain model is a matrix whose columns sum to 1. Here is an example of a matrix which does not, producing an error message.</p>
 <pre class="r"><code>(fail &lt;- matrix(c(.5, .5, .75, .5), nrow = 2, ncol = 2))</code></pre>
@@ -324,6 +334,9 @@ markov.demo(graph, initial, print.skip = 5)</code></pre>
 ## [1,]  0.5 0.75
 ## [2,]  0.5 0.50</code></pre>
 <pre><code>## Error in markov.demo(fail, rep(1/2, 2)): ERROR: Data is not properly formatted.</code></pre>
+</div>
+<div id="single-hub-example" class="section level1">
+<h1>Single Hub Example</h1>
 <p>This example represents a “single hub”. Note that all pages point to one hub.</p>
 <pre class="r"><code>graph &lt;- load.graph(&quot;graph-single-hub.csv&quot;)
 markov.demo(graph, initial, print.skip = 5)</code></pre>
@@ -376,8 +389,10 @@ markov.demo(graph, initial, print.skip = 5)</code></pre>
 ##  [9,] 0.015
 ## [10,] 0.015</code></pre>
 <pre class="r"><code>eigen.demo(graph)</code></pre>
-<pre><code>## Steady State Vector is:</code></pre>
+<pre><code>## Steady state vector is:</code></pre>
 <pre><code>##  [1] 0.865 0.015 0.015 0.015 0.015 0.015 0.015 0.015 0.015 0.015</code></pre>
+<div id="impact-of-damping-factor" class="section level2">
+<h2>Impact of Damping Factor</h2>
 <p>In the above example you see the impact of the damping factor in force. What if we ran the Markov Chain without the damping factor? As you can see below, the entire weight of probability in the steady state is placed on the single hub. This is true even though we started with an even probability of starting on each page.</p>
 <pre class="r"><code>markov.demo(graph, initial, damping.factor=1, print.skip = 5)</code></pre>
 <pre><code>## Graph input, representing original transition matrix:</code></pre>
@@ -428,6 +443,10 @@ markov.demo(graph, initial, print.skip = 5)</code></pre>
 ##  [8,]    0
 ##  [9,]    0
 ## [10,]    0</code></pre>
+</div>
+</div>
+<div id="transfer-of-influence" class="section level1">
+<h1>Transfer of Influence</h1>
 <p>Next, we vary the single hub example so that the hub points only to another page instead of itself. As shown, the hub has the largest PageRank, but the page it points to has nearly as much as the hub “passes” its PageRank to the other page.</p>
 <pre class="r"><code>graph &lt;- load.graph(&quot;graph-hub-transfer.csv&quot;)
 markov.demo(graph, initial, print.skip = 30)</code></pre>
@@ -528,9 +547,12 @@ markov.demo(graph, initial, print.skip = 30)</code></pre>
 ##  [9,] 0.0150000
 ## [10,] 0.0150000</code></pre>
 <pre class="r"><code>eigen.demo(graph)</code></pre>
-<pre><code>## Steady State Vector is:</code></pre>
+<pre><code>## Steady state vector is:</code></pre>
 <pre><code>##  [1] 0.4675676 0.4124324 0.0150000 0.0150000 0.0150000 0.0150000 0.0150000
 ##  [8] 0.0150000 0.0150000 0.0150000</code></pre>
+</div>
+<div id="dual-hub-more-complex-example" class="section level1">
+<h1>Dual Hub – More Complex Example</h1>
 <p>This more complex example demonstrates two hubs.</p>
 <pre class="r"><code>graph &lt;- load.graph(&quot;graph-dual-hub.csv&quot;)
 nx &lt;- nrow(graph)
@@ -680,9 +702,11 @@ markov.demo(graph, initial, print.skip = 20)</code></pre>
 ##  [9,] 0.09090909 0 0 0.0 0.0 0.0 0.0 0.0 0.0 0 0
 ## [10,] 0.09090909 0 0 0.0 0.0 0.0 0.0 0.0 0.0 0 0
 ## [11,] 0.09090909 0 0 0.0 0.0 0.0 0.0 0.0 0.0 0 0</code></pre>
-<pre><code>## Steady State Vector is:</code></pre>
+<pre><code>## Steady state vector is:</code></pre>
 <pre><code>##  [1] 0.02183629 0.39908880 0.35454919 0.01532371 0.08228752 0.05029591
 ##  [7] 0.01532371 0.01532371 0.01532371 0.01532371 0.01532371</code></pre>
+<div id="demonstration-of-case-for-dangling-node-correction" class="section level2">
+<h2>Demonstration of Case for Dangling Node Correction</h2>
 <p>What if we were to attempt to run our Markov chain on the above example without correcting for the dangling node, Page A which has no outgoing links?</p>
 <pre class="r"><code>markov.demo(graph, initial, print.skip = 20, fix.dangling = FALSE)</code></pre>
 <pre><code>## Graph input, representing original transition matrix:</code></pre>
@@ -803,9 +827,11 @@ markov.demo(graph, initial, print.skip = 20)</code></pre>
 ## [10,] 0.01363636
 ## [11,] 0.01363636</code></pre>
 <pre class="r"><code>eigen.demo(graph, fix.dangling = FALSE)</code></pre>
-<pre><code>## Warning in eigen.demo(graph, fix.dangling = FALSE): Normalized eigenvector
-## DOES NOT sum to 1.</code></pre>
-<pre><code>## numeric(0)</code></pre>
+<pre><code>## Error in eigen.demo(graph, fix.dangling = FALSE): There is no eigenvalue of 1.</code></pre>
+</div>
+</div>
+<div id="disconnected-pages-example" class="section level1">
+<h1>Disconnected Pages Example</h1>
 <p>Our final example contains a selection of pages that are completely disconnected from the others.</p>
 <pre class="r"><code>graph &lt;- load.graph(&quot;graph-disconnected.csv&quot;)
 nx &lt;- nrow(graph)
@@ -1011,10 +1037,12 @@ markov.demo(graph, initial, print.skip = 20)</code></pre>
 ## [20,] 0.0075000</code></pre>
 <pre class="r"><code>eigen.demo(graph)</code></pre>
 <pre><code>## Warning in eigen.demo(graph): imaginary parts discarded in coercion</code></pre>
-<pre><code>## Steady State Vector is:</code></pre>
+<pre><code>## Steady state vector is:</code></pre>
 <pre><code>##  [1] 0.3210811 0.3059189 0.0330000 0.1189189 0.1085811 0.0075000 0.0075000
 ##  [8] 0.0075000 0.0075000 0.0075000 0.0075000 0.0075000 0.0075000 0.0075000
 ## [15] 0.0075000 0.0075000 0.0075000 0.0075000 0.0075000 0.0075000</code></pre>
+<div id="demonstration-of-case-for-damping-factor-correction" class="section level2">
+<h2>Demonstration of Case for Damping Factor Correction</h2>
 <p>Google’s damping factor corrects for disconnected pages. Let’s run our Markov chain and eigenvector calculation without using it.</p>
 <pre class="r"><code>markov.demo(graph, initial, damping.factor = 1, print.skip = 250)</code></pre>
 <pre><code>## Graph input, representing original transition matrix:</code></pre>
@@ -1216,10 +1244,12 @@ markov.demo(graph, initial, print.skip = 20)</code></pre>
 ## [19,] 0.00
 ## [20,] 0.00</code></pre>
 <pre class="r"><code>eigen.demo(graph, damping.factor = 1)</code></pre>
-<pre><code>## Steady State Vector is:</code></pre>
+<pre><code>## Steady state vector is:</code></pre>
 <pre><code>##  [1] 0.25 0.25 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00
 ## [15] 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.25 0.25 0.00 0.00 0.00
 ## [29] 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00</code></pre>
+</div>
+</div>
 
 
 
