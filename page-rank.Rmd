@@ -3,7 +3,7 @@ title: "Markov Chains Demonstration Using PageRank"
 author: Giancarlo Dibonaventi, Haroon Janjua, Hope Foster-Reyes, Mallika Thanky, Ethan
   Ton
 date: "May 28, 2016"
-output: html_document
+output: pdf_document
 ---
 
 This example demonstrates Markov Chains using the PageRank algorithm.
@@ -189,6 +189,8 @@ This example represents a "single hub". Note that all pages point to one hub.
 
 ```{r hub}
 graph <- load.graph("graph-single-hub.csv")
+nx <- nrow(graph)
+initial <- rep(1 / nx, nx)
 markov.demo(graph, initial, print.skip = 5)
 eigen.demo(graph)
 ```
@@ -225,7 +227,7 @@ eigen.demo(graph)
 
 ## Demonstration of Case for Dangling Node Correction
 
-What if we were to attempt to run our Markov chain on the above example without correcting for the dangling node, Page A  which has no outgoing links?
+What if we were to attempt to locate our steady state vector without correcting for the dangling node, Page A  which has no outgoing links?
 
 ```{r dual-dangling, error=TRUE}
 markov.demo(graph, initial, print.skip = 20, fix.dangling = FALSE)

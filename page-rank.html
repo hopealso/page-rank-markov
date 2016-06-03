@@ -339,6 +339,8 @@ markov.demo(graph, initial, print.skip = 5)</code></pre>
 <h1>Single Hub Example</h1>
 <p>This example represents a “single hub”. Note that all pages point to one hub.</p>
 <pre class="r"><code>graph &lt;- load.graph(&quot;graph-single-hub.csv&quot;)
+nx &lt;- nrow(graph)
+initial &lt;- rep(1 / nx, nx)
 markov.demo(graph, initial, print.skip = 5)</code></pre>
 <pre><code>## Graph input, representing original transition matrix:</code></pre>
 <pre><code>##       A B C D E F G H I J
@@ -707,7 +709,7 @@ markov.demo(graph, initial, print.skip = 20)</code></pre>
 ##  [7] 0.01532371 0.01532371 0.01532371 0.01532371 0.01532371</code></pre>
 <div id="demonstration-of-case-for-dangling-node-correction" class="section level2">
 <h2>Demonstration of Case for Dangling Node Correction</h2>
-<p>What if we were to attempt to run our Markov chain on the above example without correcting for the dangling node, Page A which has no outgoing links?</p>
+<p>What if we were to attempt to locate our steady state vector without correcting for the dangling node, Page A which has no outgoing links?</p>
 <pre class="r"><code>markov.demo(graph, initial, print.skip = 20, fix.dangling = FALSE)</code></pre>
 <pre><code>## Graph input, representing original transition matrix:</code></pre>
 <pre><code>##       A B C   D   E   F   G   H   I J K
