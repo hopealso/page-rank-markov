@@ -451,59 +451,6 @@ markov.demo(graph, initial, print.skip = 5)</code></pre>
 <pre class="r"><code>eigen.demo(graph)</code></pre>
 <pre><code>## Steady state vector is:</code></pre>
 <pre><code>##  [1] 0.865 0.015 0.015 0.015 0.015 0.015 0.015 0.015 0.015 0.015</code></pre>
-<div id="impact-of-damping-factor" class="section level2">
-<h2>Impact of Damping Factor</h2>
-<p>In the above example you see the impact of the damping factor in force. What if we ran the Markov Chain without the damping factor? As you can see below, the entire weight of probability in the steady state is placed on the single hub. This is true even though we start with an even probability of starting on each page.</p>
-<pre class="r"><code>markov.demo(graph, initial, damping.factor=1, print.skip = 5)</code></pre>
-<pre><code>## Graph input, representing original transition matrix:</code></pre>
-<pre><code>##       A B C D E F G H I J
-##  [1,] 1 1 1 1 1 1 1 1 1 1
-##  [2,] 0 0 0 0 0 0 0 0 0 0
-##  [3,] 0 0 0 0 0 0 0 0 0 0
-##  [4,] 0 0 0 0 0 0 0 0 0 0
-##  [5,] 0 0 0 0 0 0 0 0 0 0
-##  [6,] 0 0 0 0 0 0 0 0 0 0
-##  [7,] 0 0 0 0 0 0 0 0 0 0
-##  [8,] 0 0 0 0 0 0 0 0 0 0
-##  [9,] 0 0 0 0 0 0 0 0 0 0
-## [10,] 0 0 0 0 0 0 0 0 0 0</code></pre>
-<pre><code>## Iteration 1 PageRank (probability) vector:</code></pre>
-<pre><code>##       [,1]
-##  [1,]    1
-##  [2,]    0
-##  [3,]    0
-##  [4,]    0
-##  [5,]    0
-##  [6,]    0
-##  [7,]    0
-##  [8,]    0
-##  [9,]    0
-## [10,]    0</code></pre>
-<pre><code>## Iteration 2 PageRank (probability) vector:</code></pre>
-<pre><code>##       [,1]
-##  [1,]    1
-##  [2,]    0
-##  [3,]    0
-##  [4,]    0
-##  [5,]    0
-##  [6,]    0
-##  [7,]    0
-##  [8,]    0
-##  [9,]    0
-## [10,]    0</code></pre>
-<pre><code>## Probabilities converge to steady state vector at iteration number 1:</code></pre>
-<pre><code>##       [,1]
-##  [1,]    1
-##  [2,]    0
-##  [3,]    0
-##  [4,]    0
-##  [5,]    0
-##  [6,]    0
-##  [7,]    0
-##  [8,]    0
-##  [9,]    0
-## [10,]    0</code></pre>
-</div>
 <div id="transfer-of-influence" class="section level2">
 <h2>Transfer of Influence</h2>
 <p>Next, we vary the single hub example so that the hub points only to another page instead of itself. As shown, the hub has the largest PageRank, but the page it points to has nearly as much as the hub “passes” its PageRank to the other page.</p>

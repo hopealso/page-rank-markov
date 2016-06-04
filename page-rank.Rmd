@@ -3,7 +3,7 @@ title: "Markov Chains Demonstration Using PageRank"
 author: Giancarlo Dibonaventi, Hope Foster-Reyes, Haroon Janjua, Mallika Thanky, Ethan
   Ton
 date: "May 28, 2016"
-output: html_document
+output: pdf_document
 ---
 
 This example demonstrates Markov Chains using the PageRank algorithm.
@@ -208,14 +208,6 @@ nx <- nrow(graph)
 initial <- rep(1 / nx, nx)
 markov.demo(graph, initial, print.skip = 5)
 eigen.demo(graph)
-```
-
-## Impact of Damping Factor
-
-In the above example you see the impact of the damping factor in force. What if we ran the Markov Chain without the damping factor? As you can see below, the entire weight of probability in the steady state is placed on the single hub. This is true even though we start with an even probability of starting on each page.
-
-```{r hub-no-damping}
-markov.demo(graph, initial, damping.factor=1, print.skip = 5)
 ```
 
 ## Transfer of Influence
