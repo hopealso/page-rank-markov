@@ -1,9 +1,9 @@
 ---
 title: "Markov Chains Demonstration Using PageRank"
-author: Giancarlo Dibonaventi, Haroon Janjua, Hope Foster-Reyes, Mallika Thanky, Ethan
+author: Giancarlo Dibonaventi, Hope Foster-Reyes, Haroon Janjua, Mallika Thanky, Ethan
   Ton
 date: "May 28, 2016"
-output: pdf_document
+output: html_document
 ---
 
 This example demonstrates Markov Chains using the PageRank algorithm.
@@ -69,9 +69,9 @@ markov.demo <- function(graph, initial, damping.factor=0.85,
   #     representing the probability of state change from j to i, i.e. the probability
   #     of a hypothetical web surfer following a link from the jth page to the ith page.
   #   initial: Initial probability vector.
-  #   damping.factor: Damping constant simulates random walk accounting for isolated pages.
-  #     As written, this factor is the probability that a random surfer will *not*
-  #     make a jump to a random page but will follow links.
+  #   damping.factor: Damping constant accounts for isolated pages and ensures a regular 
+  #     matrix is used. As written, this factor is the probability that a random surfer 
+  #     will *not* make a jump to a random page but will follow links.
   #     Set damping.factor to 1 to simulate basic Markov Chain without damping.
   #   print.skip: Skip count when printing graphs to demonstrate iterations.
   
@@ -109,7 +109,7 @@ markov.demo <- function(graph, initial, damping.factor=0.85,
     
     # If all values in check_vector are less than delta_threshold, print result and end.
     if (all(check_vector < delta_threshold)) {
-      message("Probabilities converge to steady state vector at iteration number ", i, ": ")
+      message("Probabilities converge to steady state vector at iteration number ", i-1, ": ")
       return(probability)
       break      
     } 
@@ -130,10 +130,10 @@ eigen.demo <- function(graph, damping.factor=0.85, fix.dangling=TRUE) {
     stop("ERROR: Data is not properly formatted.")
   }
   
-  # Create Random Walk Matrix (B) 
+  # Create Perturbation Matrix (B) 
   B <- matrix(1/nx,nrow=nx,ncol=nx) 
   
-  # Create PageRank Matrix based off Transition Matrix (graph) and Random Walk Matrix (B) 
+  # Create PageRank Matrix based off Transition Matrix (graph) and Perturbation Matrix (B) 
   M <- (damping.factor * graph) + ((1 - damping.factor) * B) 
   
   eigen_output <- eigen(M)
@@ -166,12 +166,25 @@ eigen.demo <- function(graph, damping.factor=0.85, fix.dangling=TRUE) {
 
 Let's start with a simple example. This example confirms that if every page points equally to every other page, the PageRank will be evenly distributed.
 
-Our first output is the graph itself, followed by the Markov iterations which calculate PageRank and gradually reach a steady state.
-
 ```{r ball}
 graph <- load.graph("graph-massive-ball.csv")
 nx <- nrow(graph)
-initial <- rep(1 / nx, nx)
+```
+
+We'll start with an initial probabiity vector with an even probability of starting on any node:
+
+```{r ball-equal-initial}
+(initial <- rep(1 / nx, nx))
+markov.demo(graph, initial, print.skip = 5)
+eigen.demo(graph)
+```
+
+We can see above the transition graph already matches the initial matrix, so no iterations are necessary; the initial vector is the same as the steady state vector.
+
+What if we start on a specific node instead? The steady state is reached in one interation.
+
+```{r}
+(initial <- c(1, rep(0, nx-1)))
 markov.demo(graph, initial, print.skip = 5)
 eigen.demo(graph)
 ```
@@ -187,6 +200,8 @@ markov.demo(fail, rep(1/2, 2))
 
 This example represents a "single hub". Note that all pages point to one hub.
 
+Our first output in these examples is the graph itself, followed by the Markov iterations which calculate PageRank and gradually reach a steady state.
+
 ```{r hub}
 graph <- load.graph("graph-single-hub.csv")
 nx <- nrow(graph)
@@ -197,7 +212,7 @@ eigen.demo(graph)
 
 ## Impact of Damping Factor
 
-In the above example you see the impact of the damping factor in force. What if we ran the Markov Chain without the damping factor? As you can see below, the entire weight of probability in the steady state is placed on the single hub. This is true even though we started with an even probability of starting on each page.
+In the above example you see the impact of the damping factor in force. What if we ran the Markov Chain without the damping factor? As you can see below, the entire weight of probability in the steady state is placed on the single hub. This is true even though we start with an even probability of starting on each page.
 
 ```{r hub-no-damping}
 markov.demo(graph, initial, damping.factor=1, print.skip = 5)
@@ -227,10 +242,9 @@ eigen.demo(graph)
 
 ## Demonstration of Case for Dangling Node Correction
 
-What if we were to attempt to locate our steady state vector without correcting for the dangling node, Page A  which has no outgoing links?
+What if we were to attempt to locate our steady state vector without correcting for the dangling node, Page A  which has no outgoing links? This is not a true stochastic matrix, and does not have and eigenvalue of 1 or its corresponding eigenvector.
 
 ```{r dual-dangling, error=TRUE}
-markov.demo(graph, initial, print.skip = 20, fix.dangling = FALSE)
 eigen.demo(graph, fix.dangling = FALSE)
 ```
 
@@ -248,10 +262,19 @@ eigen.demo(graph)
 
 ## Demonstration of Case for Damping Factor Correction
 
-Google's damping factor corrects for disconnected pages. Let's run our Markov chain and eigenvector calculation without using it.
+Google's damping factor corrects for disconnected pages. Let's run our Markov chain and eigenvector calculation *without* using it. 
 
-```{r disconnected no-damping}
-markov.demo(graph, initial, damping.factor = 1, print.skip = 250)
+```{r disconnected-no-damping}
+markov.demo(graph, initial, damping.factor = 1, print.skip = 249)
 eigen.demo(graph, damping.factor = 1)
+```
+
+As is seen above, while we can solve for our eigenvector with an eigenvalue of 1, our Markov chain does not appear to converge on that vector and instead seems to vacillate between probability vectors -- demonstrating that our transition matrix, when not correcting with our damping factor, is stocastic, but not regular.
+
+One last demonstration shows that this will further vary based on our initial probability vector. If instead of beginning with an even probability of starting at any node, we begin at a specific node, such a B, our Markov chain becomes trapped in recursive loops without a damping factor.
+
+```{r disconnected-vary-starting}
+(initial <- c(0, 1, rep(0, nx-2)))
+markov.demo(graph, initial, damping.factor = 1, print.skip = 500)
 ```
 

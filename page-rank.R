@@ -56,9 +56,9 @@ markov.demo <- function(graph, initial, damping.factor=0.85,
   #     representing the probability of state change from j to i, i.e. the probability
   #     of a hypothetical web surfer following a link from the jth page to the ith page.
   #   initial: Initial probability vector.
-  #   damping.factor: Damping constant simulates random walk accounting for isolated pages.
-  #     As written, this factor is the probability that a random surfer will *not*
-  #     make a jump to a random page but will follow links.
+  #   damping.factor: Damping constant accounts for isolated pages and ensures a regular 
+  #     matrix is used. As written, this factor is the probability that a random surfer 
+  #     will *not* make a jump to a random page but will follow links.
   #     Set damping.factor to 1 to simulate basic Markov Chain without damping.
   #   print.skip: Skip count when printing graphs to demonstrate iterations.
   
@@ -96,7 +96,7 @@ markov.demo <- function(graph, initial, damping.factor=0.85,
     
     # If all values in check_vector are less than delta_threshold, print result and end.
     if (all(check_vector < delta_threshold)) {
-      message("Probabilities converge to steady state vector at iteration number ", i, ": ")
+      message("Probabilities converge to steady state vector at iteration number ", i-1, ": ")
       return(probability)
       break      
     } 
@@ -117,10 +117,10 @@ eigen.demo <- function(graph, damping.factor=0.85, fix.dangling=TRUE) {
     stop("ERROR: Data is not properly formatted.")
   }
   
-  # Create Random Walk Matrix (B) 
+  # Create Perturbation Matrix (B) 
   B <- matrix(1/nx,nrow=nx,ncol=nx) 
   
-  # Create PageRank Matrix based off Transition Matrix (graph) and Random Walk Matrix (B) 
+  # Create PageRank Matrix based off Transition Matrix (graph) and Perturbation Matrix (B) 
   M <- (damping.factor * graph) + ((1 - damping.factor) * B) 
   
   eigen_output <- eigen(M)
@@ -132,7 +132,7 @@ eigen.demo <- function(graph, damping.factor=0.85, fix.dangling=TRUE) {
     stop("There is no eigenvalue of 1.")
   }
   eigen_vector <- as.double(eigen_output$vectors[, where.eigenvalue.1])
-
+  
   # Normalize vector such that entire column sum = 1 
   steady_state_vector <- eigen_vector / sum(eigen_vector) 
   
