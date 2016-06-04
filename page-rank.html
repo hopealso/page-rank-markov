@@ -451,6 +451,7 @@ markov.demo(graph, initial, print.skip = 5)</code></pre>
 <pre class="r"><code>eigen.demo(graph)</code></pre>
 <pre><code>## Steady state vector is:</code></pre>
 <pre><code>##  [1] 0.865 0.015 0.015 0.015 0.015 0.015 0.015 0.015 0.015 0.015</code></pre>
+<p>Above, you see the impact of the damping factor, as the single hub retains approximately 85% of its importance, while the remainder is shared by the rest of the sites.</p>
 <div id="transfer-of-influence" class="section level2">
 <h2>Transfer of Influence</h2>
 <p>Next, we vary the single hub example so that the hub points only to another page instead of itself. As shown, the hub has the largest PageRank, but the page it points to has nearly as much as the hub “passes” its PageRank to the other page.</p>
